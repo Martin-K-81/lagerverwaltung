@@ -1,0 +1,1314 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Lagerverwaltung</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/firebase@10.12.2/firebase-app-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/firebase@10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<style>
+  :root {
+    --bg: #eef1f4;
+    --surface: #ffffff;
+    --surface-2: #e4e8ec;
+    --ink: #1c2333;
+    --ink-soft: #545f70;
+    --line: #c9d1d9;
+    --primary: #2b5c8a;
+    --primary-dark: #1d4568;
+    --warn: #b8562b;
+    --warn-bg: #fbe9e0;
+    --ok: #2f7d5a;
+    --radius: 10px;
+    --shadow: 0 1px 2px rgba(20,30,45,.08), 0 4px 12px rgba(20,30,45,.06);
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #14181f;
+      --surface: #1c222c;
+      --surface-2: #262d38;
+      --ink: #e7ebf0;
+      --ink-soft: #9aa5b4;
+      --line: #333c48;
+      --primary: #5b93c4;
+      --primary-dark: #3f709e;
+      --warn: #e08a5c;
+      --warn-bg: #3a2a20;
+      --ok: #5fbf93;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 4px 14px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #14181f;
+    --surface: #1c222c;
+    --surface-2: #262d38;
+    --ink: #e7ebf0;
+    --ink-soft: #9aa5b4;
+    --line: #333c48;
+    --primary: #5b93c4;
+    --primary-dark: #3f709e;
+    --warn: #e08a5c;
+    --warn-bg: #3a2a20;
+    --ok: #5fbf93;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 4px 14px rgba(0,0,0,.35);
+  }
+  html, body { height: 100%; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "IBM Plex Sans", -apple-system, "Segoe UI", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .mono { font-family: "IBM Plex Mono", ui-monospace, monospace; }
+
+  header.topbar {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    padding-top: calc(12px + env(safe-area-inset-top, 0px));
+    background: var(--surface);
+    border-bottom: 1px solid var(--line);
+  }
+  .topbar .left, .topbar .right { display: flex; align-items: center; gap: 8px; }
+  .icon-btn {
+    background: none; border: 1px solid var(--line); color: var(--ink);
+    width: 38px; height: 38px; border-radius: 8px; font-size: 17px;
+    display: flex; align-items: center; justify-content: center; cursor: pointer;
+  }
+  .icon-btn:active { background: var(--surface-2); }
+  .icon-btn.admin-on { border-color: var(--ok); color: var(--ok); }
+  .version { font-size: 12px; color: var(--ink-soft); }
+  .brand { font-weight: 600; font-size: 15px; letter-spacing: .2px; }
+
+  main { max-width: 720px; margin: 0 auto; padding: 20px 16px 60px; }
+
+  .menu-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+    margin-top: 8px;
+  }
+  .menu-btn {
+    background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 22px 14px; text-align: left; cursor: pointer; box-shadow: var(--shadow);
+    display: flex; flex-direction: column; gap: 10px; min-height: 108px;
+  }
+  .menu-btn .glyph { font-size: 26px; }
+  .menu-btn .label { font-weight: 600; font-size: 15px; }
+  .menu-btn .sub { font-size: 12px; color: var(--ink-soft); }
+  .menu-btn:active { background: var(--surface-2); }
+  .menu-btn.wide { grid-column: 1 / -1; }
+  .badge {
+    display: inline-block; background: var(--warn-bg); color: var(--warn);
+    font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 999px;
+  }
+
+  .view { display: none; }
+  .view.active { display: block; }
+  .view-header { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+  .back-btn { background: none; border: none; color: var(--primary); font-size: 15px; cursor: pointer; padding: 6px 0; }
+  .view-title { font-size: 19px; font-weight: 600; margin: 0; }
+
+  input, select, textarea {
+    width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px;
+    background: var(--surface); color: var(--ink); font-size: 15px; font-family: inherit;
+  }
+  label { display: block; font-size: 12.5px; color: var(--ink-soft); margin: 12px 0 4px; }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    padding: 11px 16px; border-radius: 8px; border: 1px solid var(--primary);
+    background: var(--primary); color: #fff; font-size: 14.5px; font-weight: 600;
+    cursor: pointer;
+  }
+  .btn.secondary { background: transparent; color: var(--primary); }
+  .btn.ghost { background: transparent; color: var(--ink-soft); border-color: var(--line); }
+  .btn.warn { background: var(--warn); border-color: var(--warn); }
+  .btn:disabled { opacity: .45; cursor: not-allowed; }
+  .btn-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+
+  .card {
+    background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 14px; margin-bottom: 10px;
+  }
+  .card .title { font-weight: 600; font-size: 15px; }
+  .card .meta { font-size: 12.5px; color: var(--ink-soft); margin-top: 2px; }
+  .card .row { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  .stock-low { color: var(--warn); font-weight: 600; }
+  .thumb {
+    width: 44px; height: 44px; border-radius: 6px; object-fit: cover;
+    background: var(--surface-2); flex-shrink: 0;
+  }
+  .qty-input { width: 84px; text-align: center; }
+
+  .group-title {
+    font-size: 12.5px; text-transform: uppercase; letter-spacing: .06em;
+    color: var(--ink-soft); margin: 18px 0 8px;
+  }
+  .empty-state {
+    text-align: center; color: var(--ink-soft); padding: 40px 12px; font-size: 14px;
+  }
+
+  .modal-backdrop {
+    position: fixed; inset: 0; background: rgba(10,15,20,.5); z-index: 50;
+    display: flex; align-items: flex-end; justify-content: center;
+  }
+  @media (min-width: 640px) { .modal-backdrop { align-items: center; } }
+  .modal {
+    background: var(--surface); width: 100%; max-width: 520px;
+    border-radius: 14px 14px 0 0; padding: 18px 18px calc(18px + env(safe-area-inset-bottom,0px));
+    max-height: 88vh; overflow-y: auto;
+  }
+  @media (min-width: 640px) { .modal { border-radius: 14px; } }
+  .modal h3 { margin: 0 0 4px; font-size: 17px; }
+  .modal .close-x { position: absolute; }
+  .modal-top { display: flex; justify-content: space-between; align-items: flex-start; }
+
+  .toast {
+    position: fixed; bottom: calc(20px + env(safe-area-inset-bottom,0px)); left: 50%;
+    transform: translateX(-50%); background: var(--ink); color: var(--bg);
+    padding: 10px 18px; border-radius: 8px; font-size: 14px; z-index: 100; opacity: 0;
+    transition: opacity .2s; pointer-events: none;
+  }
+  .toast.show { opacity: 1; }
+
+  ::placeholder { color: var(--ink-soft); opacity: .7; }
+</style>
+</head>
+<body>
+
+<div id="lockScreen" style="position:fixed;inset:0;background:var(--bg);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;">
+  <div style="width:100%;max-width:340px;text-align:center;">
+    <div style="font-size:34px;margin-bottom:10px;">📦</div>
+    <h2 style="margin:0 0 4px;">Lagerverwaltung</h2>
+    <p class="meta" style="margin-bottom:18px;">Bitte Zugangs-Passwort eingeben</p>
+    <input type="password" id="appPassword" placeholder="Passwort" style="text-align:center;">
+    <div id="lockError" style="color:var(--warn); font-size:13px; margin-top:8px; min-height:18px;"></div>
+    <button class="btn" id="unlockBtn" style="width:100%; margin-top:10px;">Anmelden</button>
+  </div>
+</div>
+
+<header class="topbar">
+  <div class="left">
+    <button class="icon-btn" id="infoBtn" title="Info">i</button>
+    <span class="brand">Lagerverwaltung</span>
+  </div>
+  <div class="right">
+    <span class="version mono" id="versionLabel">v0.1.0</span>
+    <button class="icon-btn" id="adminBtn" title="Admin sperren/entsperren">🔒</button>
+  </div>
+</header>
+
+<main>
+
+  <!-- HAUPTMENÜ -->
+  <div class="view active" id="view-home">
+    <div class="menu-grid">
+      <button class="menu-btn" data-view="wareneingang">
+        <div class="glyph">📥</div>
+        <div class="label">Wareneingang</div>
+        <div class="sub">Bestand einbuchen</div>
+      </button>
+      <button class="menu-btn" data-view="warenausgang">
+        <div class="glyph">📤</div>
+        <div class="label">Warenausgang</div>
+        <div class="sub">Bestand ausbuchen</div>
+      </button>
+      <button class="menu-btn" data-view="nachbestellung">
+        <div class="glyph">🔔</div>
+        <div class="label">Nachbestellung</div>
+        <div class="sub" id="nachbestellCount">wird geladen…</div>
+      </button>
+      <button class="menu-btn" data-view="ersatzteilsuche">
+        <div class="glyph">🔍</div>
+        <div class="label">Ersatzteilsuche</div>
+        <div class="sub">Infos nachschlagen</div>
+      </button>
+      <button class="menu-btn wide" data-view="individuell">
+        <div class="glyph">✏️</div>
+        <div class="label">Individuelle Bestellung</div>
+        <div class="sub" id="indivSub">Eigene Bestellliste zusammenstellen</div>
+      </button>
+      <button class="menu-btn wide" data-view="verlauf" id="verlaufBtn" style="display:none;">
+        <div class="glyph">📜</div>
+        <div class="label">Buchungshistorie</div>
+        <div class="sub">Alle Ein-/Ausbuchungen einsehen (nur Admin)</div>
+      </button>
+    </div>
+  </div>
+
+  <!-- WARENEINGANG / WARENAUSGANG -->
+  <div class="view" id="view-buchen">
+    <div class="view-header">
+      <button class="back-btn" data-back>← Zurück</button>
+      <h2 class="view-title" id="buchenTitle">Wareneingang</h2>
+    </div>
+    <label>Name (wer bucht)</label>
+    <input type="text" id="buchenName" placeholder="Dein Name" />
+    <label style="margin-top:14px;">Ersatzteil suchen</label>
+    <input type="text" id="buchenSearch" placeholder="Suche: Artikelnummer, Type, Hersteller, Beschreibung…" />
+    <input type="text" id="buchenSearch2" placeholder="Weiterer Suchbegriff (UND)" style="margin-top:8px;" />
+    <div id="buchenResults" style="margin-top:12px;"></div>
+  </div>
+
+  <!-- NACHBESTELLUNG -->
+  <div class="view" id="view-nachbestellung">
+    <div class="view-header">
+      <button class="back-btn" data-back>← Zurück</button>
+      <h2 class="view-title">Nachbestellung</h2>
+    </div>
+    <div id="nachbestellList"></div>
+    <div class="btn-row" id="nachbestellActions" style="display:none;">
+      <button class="btn" id="nbPdfBtn">PDF erstellen</button>
+      <button class="btn secondary" id="nbMailBtn">Per E-Mail vorbereiten</button>
+    </div>
+  </div>
+
+  <!-- ERSATZTEILSUCHE -->
+  <div class="view" id="view-ersatzteilsuche">
+    <div class="view-header">
+      <button class="back-btn" data-back>← Zurück</button>
+      <h2 class="view-title">Ersatzteilsuche</h2>
+    </div>
+    <div class="btn-row" style="margin-bottom:10px;">
+      <button class="btn secondary" id="infoShowAllBtn">Alle anzeigen</button>
+      <button class="icon-btn" id="infoPrevBtn" style="display:none;">&lt;</button>
+      <button class="icon-btn" id="infoNextBtn" style="display:none;">&gt;</button>
+    </div>
+    <div class="row" style="gap:8px;">
+      <input type="text" id="infoSearch" placeholder="Suche: Artikelnummer, Type, Hersteller, Lagerort…" style="flex:1;">
+      <button class="icon-btn" id="infoScanBtn" title="Barcode/QR scannen">📷</button>
+    </div>
+    <input type="text" id="infoSearch2" placeholder="Weiterer Suchbegriff (UND)" style="margin-top:8px;" />
+    <div class="btn-row" id="adminAddRow" style="display:none;">
+      <button class="btn secondary" id="addItemBtn">+ Neues Ersatzteil anlegen</button>
+    </div>
+    <div id="infoResults" style="margin-top:12px;"></div>
+  </div>
+
+  <!-- INDIVIDUELLE BESTELLUNG -->
+  <div class="view" id="view-individuell">
+    <div class="view-header">
+      <button class="back-btn" data-back>← Zurück</button>
+      <h2 class="view-title">Individuelle Bestellung</h2>
+    </div>
+    <label>Name (wer bestellt)</label>
+    <input type="text" id="indivName" placeholder="Dein Name" />
+    <label style="margin-top:14px;">Ersatzteil suchen</label>
+    <input type="text" id="indivSearch" placeholder="Ersatzteil suchen und hinzufügen…" />
+    <input type="text" id="indivSearch2" placeholder="Weiterer Suchbegriff (UND)" style="margin-top:8px;" />
+    <div id="indivSearchResults" style="margin-top:8px;"></div>
+    <div class="group-title">Bestellliste</div>
+    <div id="indivCart"></div>
+    <div class="btn-row" id="indivActions" style="display:none;">
+      <button class="btn" id="indivPdfBtn">PDF erstellen</button>
+      <button class="btn secondary" id="indivMailBtn">Per E-Mail vorbereiten</button>
+    </div>
+  </div>
+
+  <!-- BUCHUNGSHISTORIE -->
+  <div class="view" id="view-verlauf">
+    <div class="view-header">
+      <button class="back-btn" data-back>← Zurück</button>
+      <h2 class="view-title">Buchungshistorie</h2>
+    </div>
+    <input type="text" id="verlaufSearch" placeholder="Suche: Name, Artikelnummer, Type, Beschreibung…" />
+    <div class="btn-row">
+      <button class="btn warn" id="verlaufDeleteAllBtn">Gesamte Historie löschen</button>
+    </div>
+    <div id="verlaufList" style="margin-top:12px;"></div>
+  </div>
+
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* =========================================================
+   FIREBASE KONFIGURATION
+   Bitte hier die Zugangsdaten deines Firebase-Projekts eintragen
+   (wie bei deiner Instandhaltungs-App).
+   ========================================================= */
+const firebaseConfig = {
+  apiKey: "AIzaSyAmJ5CX2B0zZlGQdNqLRL9maVzgWSAoBPI",
+  authDomain: "lagerverwaltung-89a51.firebaseapp.com",
+  projectId: "lagerverwaltung-89a51",
+  storageBucket: "lagerverwaltung-89a51.firebasestorage.app",
+  messagingSenderId: "220414542469",
+  appId: "1:220414542469:web:96e8d3b5d453f7bd4d5fec"
+};
+
+const APP_VERSION = "1.0";
+document.getElementById("versionLabel").textContent = "v" + APP_VERSION;
+
+let db = null;
+let firebaseReady = false;
+try {
+  firebase.initializeApp(firebaseConfig);
+  db = firebase.firestore();
+  firebaseReady = true;
+} catch (e) {
+  console.warn("Firebase konnte nicht initialisiert werden. Bitte firebaseConfig ausfüllen.", e);
+}
+
+/* -------------------- Hilfsfunktionen -------------------- */
+function toast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), 2400);
+}
+
+function showView(id) {
+  document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
+  document.getElementById("view-" + id).classList.add("active");
+}
+document.querySelectorAll("[data-view]").forEach(btn => {
+  btn.addEventListener("click", () => onMenuSelect(btn.dataset.view));
+});
+document.querySelectorAll("[data-back]").forEach(btn => {
+  btn.addEventListener("click", () => {
+    if (document.getElementById("view-buchen").classList.contains("active")) {
+      document.getElementById("buchenName").value = "";
+    }
+    if (document.getElementById("view-individuell").classList.contains("active")) {
+      document.getElementById("indivName").value = "";
+    }
+    showView("home");
+  });
+});
+
+function onMenuSelect(target) {
+  if (target === "wareneingang" || target === "warenausgang") {
+    currentBuchungTyp = target === "wareneingang" ? "ein" : "aus";
+    document.getElementById("buchenTitle").textContent =
+      target === "wareneingang" ? "Wareneingang" : "Warenausgang";
+    document.getElementById("buchenSearch").value = "";
+    document.getElementById("buchenSearch2").value = "";
+    document.getElementById("buchenResults").innerHTML = "";
+    showView("buchen");
+  } else if (target === "nachbestellung") {
+    showView("nachbestellung");
+    renderNachbestellung();
+  } else if (target === "ersatzteilsuche") {
+    showView("ersatzteilsuche");
+    document.getElementById("infoSearch").value = "";
+    document.getElementById("infoSearch2").value = "";
+    infoAllMode = false;
+    infoPage = 0;
+    showInfoPrevNext(false);
+    renderInfoResults([]);
+  } else if (target === "individuell") {
+    showView("individuell");
+    document.getElementById("indivSearch").value = "";
+    document.getElementById("indivSearch2").value = "";
+    document.getElementById("indivSearchResults").innerHTML = "";
+    renderIndivCart();
+  } else if (target === "verlauf") {
+    showView("verlauf");
+    document.getElementById("verlaufSearch").value = "";
+    loadBuchungshistorie();
+  }
+}
+
+/* -------------------- Admin-Modus -------------------- */
+let isAdmin = false;
+document.getElementById("adminBtn").addEventListener("click", async () => {
+  if (isAdmin) {
+    isAdmin = false;
+    updateAdminUI();
+    if (document.getElementById("view-verlauf").classList.contains("active")) showView("home");
+    toast("Admin-Modus gesperrt");
+    return;
+  }
+  askAdminPin();
+});
+
+function askAdminPin() {
+  const modal = openModal(`
+    <div class="modal-top"><h3>Admin entsperren</h3><button class="icon-btn" data-close>✕</button></div>
+    <label>Admin-PIN eingeben</label>
+    <input type="password" id="adminPinInput" placeholder="PIN" style="text-align:center;">
+    <div id="adminPinError" style="color:var(--warn); font-size:13px; margin-top:8px; min-height:18px;"></div>
+    <div class="btn-row"><button class="btn" id="adminPinConfirm">Entsperren</button></div>
+  `);
+  const input = modal.querySelector("#adminPinInput");
+  input.focus();
+  const submit = async () => {
+    const pin = input.value;
+    let expectedPin = "1234"; // Fallback, falls kein Wert in Firestore hinterlegt ist
+    if (db) {
+      try {
+        const snap = await db.collection("meta").doc("admin").get();
+        if (snap.exists && snap.data().pin) expectedPin = String(snap.data().pin);
+      } catch (e) { console.warn(e); }
+    }
+    if (pin === expectedPin) {
+      isAdmin = true;
+      updateAdminUI();
+      toast("Admin-Modus entsperrt");
+      modal.remove();
+    } else {
+      modal.querySelector("#adminPinError").textContent = "Falscher PIN.";
+    }
+  };
+  modal.querySelector("#adminPinConfirm").addEventListener("click", submit);
+  input.addEventListener("keydown", (e) => { if (e.key === "Enter") submit(); });
+}
+function updateAdminUI() {
+  const btn = document.getElementById("adminBtn");
+  btn.textContent = isAdmin ? "🔓" : "🔒";
+  btn.classList.toggle("admin-on", isAdmin);
+  document.getElementById("adminAddRow").style.display = isAdmin ? "block" : "none";
+  document.getElementById("verlaufBtn").style.display = isAdmin ? "flex" : "none";
+  renderInfoResults(lastInfoResultSet || []);
+}
+
+/* -------------------- Info-Button -------------------- */
+document.getElementById("infoBtn").addEventListener("click", async () => {
+  let text = "Noch kein Infotext hinterlegt.\n\nAls Admin kann dieser im Firestore-Dokument config/info im Feld 'text' gepflegt werden.";
+  if (db) {
+    try {
+      const snap = await db.collection("meta").doc("info").get();
+      if (snap.exists && snap.data().text) text = snap.data().text;
+    } catch (e) { console.warn(e); }
+  }
+  openModal(`
+    <div class="modal-top">
+      <h3>Information</h3>
+      <button class="icon-btn" data-close>✕</button>
+    </div>
+    <p style="white-space:pre-wrap; color:var(--ink-soft); font-size:14px; margin-top:10px;">${escapeHtml(text)}</p>
+  `);
+});
+
+/* -------------------- Modal-Helfer -------------------- */
+function openModal(innerHtml) {
+  const backdrop = document.createElement("div");
+  backdrop.className = "modal-backdrop";
+  backdrop.innerHTML = `<div class="modal">${innerHtml}</div>`;
+  backdrop.addEventListener("click", (e) => { if (e.target === backdrop) backdrop.remove(); });
+  backdrop.querySelectorAll("[data-close]").forEach(b => b.addEventListener("click", () => backdrop.remove()));
+  document.body.appendChild(backdrop);
+  return backdrop;
+}
+function escapeHtml(str) {
+  return String(str).replace(/[&<>"']/g, m => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m]));
+}
+
+/* -------------------- Artikel-Datenbestand -------------------- */
+let allItems = []; // { id, artikelnummer, type, hersteller, lieferant, beschreibung,
+                    //   verpackungseinheit, mindestmenge, lagerbestand, notiz, bild,
+                    //   lagerort, regal, fach }
+
+function loadItems() {
+  if (!db) {
+    toast("Firebase ist noch nicht konfiguriert (siehe firebaseConfig im Code).");
+    return;
+  }
+  db.collection("items").onSnapshot(snap => {
+    allItems = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    updateNachbestellBadge();
+    // aktive Ansicht aktualisieren
+    if (document.getElementById("view-ersatzteilsuche").classList.contains("active")) {
+      if (infoAllMode) {
+        const maxPage = Math.max(0, Math.ceil(allItems.length / INFO_PAGE_SIZE) - 1);
+        if (infoPage > maxPage) infoPage = maxPage;
+        renderInfoAllPage();
+      } else {
+        const q = document.getElementById("infoSearch").value;
+        const q2 = document.getElementById("infoSearch2").value;
+        renderInfoResults((q.trim() || q2.trim()) ? filterItems(q, q2) : []);
+      }
+    }
+    if (document.getElementById("view-nachbestellung").classList.contains("active")) {
+      renderNachbestellung();
+    }
+  }, err => console.error("Fehler beim Laden der Artikel:", err));
+}
+
+function updateNachbestellBadge() {
+  const n = allItems.filter(i => Number(i.lagerbestand) < Number(i.mindestmenge)).length;
+  document.getElementById("nachbestellCount").innerHTML =
+    n > 0 ? `<span class="badge">${n} unter Mindestbestand</span>` : "alles im grünen Bereich";
+}
+
+function matchesTerm(item, term) {
+  const q = term.trim().toLowerCase();
+  if (!q) return true;
+  return [item.artikelnummer, item.type, item.hersteller, item.lieferant, item.beschreibung, item.lagerort, item.regal, item.fach]
+    .filter(Boolean).some(f => String(f).toLowerCase().includes(q));
+}
+function filterItems(query, query2) {
+  const q1 = (query || "").trim();
+  const q2 = (query2 || "").trim();
+  if (!q1 && !q2) return allItems;
+  return allItems.filter(i => matchesTerm(i, q1) && matchesTerm(i, q2));
+}
+
+/* -------------------- 10-stellige fortlaufende Artikelnummer -------------------- */
+async function generateArtikelnummer() {
+  if (!db) return String(Date.now()).slice(-10).padStart(10, "0");
+  const counterRef = db.collection("meta").doc("artikel");
+  const next = await db.runTransaction(async (tx) => {
+    const snap = await tx.get(counterRef);
+    const current = snap.exists ? Number(snap.data().wert || 0) : 0;
+    const updated = current + 1;
+    tx.set(counterRef, { wert: updated }, { merge: true });
+    return updated;
+  });
+  return String(next).padStart(10, "0");
+}
+
+/* -------------------- Wareneingang / Warenausgang -------------------- */
+let currentBuchungTyp = "ein";
+const buchenSearchEl = document.getElementById("buchenSearch");
+const buchenSearch2El = document.getElementById("buchenSearch2");
+buchenSearchEl.addEventListener("input", () => renderBuchenResults(buchenSearchEl.value, buchenSearch2El.value));
+buchenSearch2El.addEventListener("input", () => renderBuchenResults(buchenSearchEl.value, buchenSearch2El.value));
+
+function renderBuchenResults(query, query2) {
+  const results = filterItems(query, query2);
+  const container = document.getElementById("buchenResults");
+  if (!(query && query.trim()) && !(query2 && query2.trim())) { container.innerHTML = ""; return; }
+  if (results.length === 0) { container.innerHTML = `<div class="empty-state">Kein Ersatzteil gefunden.</div>`; return; }
+  container.innerHTML = results.slice(0, 30).map(item => `
+    <div class="card">
+      <div class="row">
+        <div style="flex:1;">
+          <div class="title"><strong>${escapeHtml(item.beschreibung || "(keine Beschreibung)")}</strong></div>
+          <div class="meta">${escapeHtml(item.type || "")}</div>
+          <div class="meta mono">${escapeHtml(item.artikelnummer)}</div>
+          <div class="meta">Bestand: <strong>${item.lagerbestand ?? 0}</strong></div>
+          ${item.lagerort ? `<div class="meta">Lagerort: ${escapeHtml(item.lagerort)}</div>` : ""}
+        </div>
+      </div>
+      <div class="row" style="margin-top:10px; gap:6px;">
+        <button class="icon-btn" data-qtystep="-1" data-target="qty-${item.id}">−</button>
+        <input type="number" class="qty-input" min="1" value="1" id="qty-${item.id}">
+        <button class="icon-btn" data-qtystep="1" data-target="qty-${item.id}">+</button>
+        <button class="btn" data-buchen="${item.id}" style="margin-left:auto;">${currentBuchungTyp === "ein" ? "Einbuchen" : "Ausbuchen"}</button>
+      </div>
+    </div>
+  `).join("");
+  container.querySelectorAll("[data-qtystep]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const input = document.getElementById(btn.dataset.target);
+      const step = Number(btn.dataset.qtystep);
+      const next = Math.max(1, (Number(input.value) || 1) + step);
+      input.value = next;
+    });
+  });
+  container.querySelectorAll("[data-buchen]").forEach(btn => {
+    btn.addEventListener("click", () => doBuchung(btn.dataset.buchen));
+  });
+}
+
+/* -------------------- Buchungshistorie (nur Admin) -------------------- */
+let allBuchungen = [];
+let buchungenGeladen = false;
+
+function loadBuchungshistorie() {
+  const container = document.getElementById("verlaufList");
+  if (!db) { container.innerHTML = `<div class="empty-state">Firebase ist nicht konfiguriert.</div>`; return; }
+  container.innerHTML = `<div class="empty-state">Lade Buchungen…</div>`;
+  db.collection("buchungen").orderBy("datum", "desc").limit(300).get()
+    .then(snap => {
+      allBuchungen = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      buchungenGeladen = true;
+      renderBuchungshistorie(document.getElementById("verlaufSearch").value);
+    })
+    .catch(err => {
+      console.error(err);
+      container.innerHTML = `<div class="empty-state">Fehler beim Laden der Buchungen.</div>`;
+    });
+}
+
+function renderBuchungshistorie(query) {
+  const container = document.getElementById("verlaufList");
+  let list = allBuchungen;
+  const q = (query || "").trim().toLowerCase();
+  if (q) {
+    list = list.filter(b =>
+      [b.name, b.artikelnummer, b.type, b.beschreibung]
+        .filter(Boolean).some(f => String(f).toLowerCase().includes(q))
+    );
+  }
+  if (list.length === 0) { container.innerHTML = `<div class="empty-state">Keine Buchungen gefunden.</div>`; return; }
+  container.innerHTML = list.map(b => {
+    const datum = b.datum && b.datum.toDate ? b.datum.toDate().toLocaleString("de-DE") : "–";
+    const typLabel = b.typ === "ein" ? "Wareneingang" : "Warenausgang";
+    return `
+      <div class="card">
+        <div class="row">
+          <div style="flex:1;">
+            <div class="title"><strong>${escapeHtml(b.beschreibung || "(keine Beschreibung)")}</strong></div>
+            <div class="meta">${escapeHtml(b.type || "")}</div>
+            <div class="meta mono">${escapeHtml(b.artikelnummer || "")}</div>
+          </div>
+          <div style="text-align:right;">
+            <div class="meta" style="${b.typ === 'ein' ? 'color:var(--ok);' : 'color:var(--warn);'} font-weight:600;">${typLabel}</div>
+            <div class="meta">Menge: <strong>${b.menge}</strong></div>
+          </div>
+          <button class="icon-btn" data-delbuchung="${b.id}" title="Eintrag löschen">🗑️</button>
+        </div>
+        <div class="meta" style="margin-top:8px;">${escapeHtml(b.name || "")} · ${datum}</div>
+      </div>
+    `;
+  }).join("");
+  container.querySelectorAll("[data-delbuchung]").forEach(btn => {
+    btn.addEventListener("click", () => deleteBuchungEintrag(btn.dataset.delbuchung));
+  });
+}
+
+document.getElementById("verlaufSearch").addEventListener("input", (e) => {
+  renderBuchungshistorie(e.target.value);
+});
+
+async function deleteBuchungEintrag(id) {
+  if (!confirm("Diesen Buchungseintrag wirklich löschen?")) return;
+  try {
+    await db.collection("buchungen").doc(id).delete();
+    allBuchungen = allBuchungen.filter(b => b.id !== id);
+    renderBuchungshistorie(document.getElementById("verlaufSearch").value);
+    toast("Eintrag gelöscht.");
+  } catch (e) {
+    console.error(e);
+    toast("Fehler beim Löschen.");
+  }
+}
+
+document.getElementById("verlaufDeleteAllBtn").addEventListener("click", async () => {
+  if (!confirm("Wirklich die GESAMTE Buchungshistorie unwiderruflich löschen?")) return;
+  try {
+    let deletedTotal = 0;
+    while (true) {
+      const snap = await db.collection("buchungen").limit(400).get();
+      if (snap.empty) break;
+      const batch = db.batch();
+      snap.docs.forEach(doc => batch.delete(doc.ref));
+      await batch.commit();
+      deletedTotal += snap.size;
+      if (snap.size < 400) break;
+    }
+    allBuchungen = [];
+    renderBuchungshistorie("");
+    toast(`Historie gelöscht (${deletedTotal} Einträge).`);
+  } catch (e) {
+    console.error(e);
+    toast("Fehler beim Löschen der Historie.");
+  }
+});
+
+async function doBuchung(itemId) {
+  const qtyInput = document.getElementById("qty-" + itemId);
+  const menge = Number(qtyInput.value);
+  if (!menge || menge <= 0) { toast("Bitte eine gültige Menge eingeben."); return; }
+  const name = document.getElementById("buchenName").value.trim();
+  if (!name) { toast("Bitte deinen Namen eingeben."); return; }
+  const item = allItems.find(i => i.id === itemId);
+  const itemRef = db.collection("items").doc(itemId);
+  try {
+    await db.runTransaction(async (tx) => {
+      const snap = await tx.get(itemRef);
+      const bestand = Number(snap.data().lagerbestand || 0);
+      const neu = currentBuchungTyp === "ein" ? bestand + menge : bestand - menge;
+      tx.update(itemRef, { lagerbestand: neu });
+    });
+    await db.collection("buchungen").add({
+      itemId,
+      beschreibung: item?.beschreibung || "",
+      type: item?.type || "",
+      artikelnummer: item?.artikelnummer || "",
+      menge,
+      name,
+      typ: currentBuchungTyp,
+      datum: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    toast(currentBuchungTyp === "ein" ? "Eingebucht." : "Ausgebucht.");
+    buchenSearchEl.value = "";
+    buchenSearch2El.value = "";
+    document.getElementById("buchenResults").innerHTML = "";
+  } catch (e) {
+    console.error(e);
+    toast("Fehler bei der Buchung.");
+  }
+}
+
+/* -------------------- Nachbestellung -------------------- */
+let nachbestellMengen = {}; // itemId -> menge
+
+function renderNachbestellung() {
+  const list = allItems.filter(i => Number(i.lagerbestand) < Number(i.mindestmenge));
+  const container = document.getElementById("nachbestellList");
+  document.getElementById("nachbestellActions").style.display = list.length ? "flex" : "none";
+  if (list.length === 0) {
+    container.innerHTML = `<div class="empty-state">Kein Artikel unter dem Mindestbestand.</div>`;
+    return;
+  }
+  const byLieferant = {};
+  list.forEach(i => {
+    const l = i.lieferant || "Ohne Lieferant";
+    (byLieferant[l] = byLieferant[l] || []).push(i);
+    if (nachbestellMengen[i.id] === undefined) {
+      nachbestellMengen[i.id] = Math.max(1, Number(i.mindestmenge) - Number(i.lagerbestand));
+    }
+  });
+  container.innerHTML = Object.keys(byLieferant).sort().map(lieferant => `
+    <div class="group-title">${escapeHtml(lieferant)}</div>
+    ${byLieferant[lieferant].map(item => `
+      <div class="card">
+        <div class="row">
+          <div>
+            <div class="title"><strong>${escapeHtml(item.beschreibung || "(keine Beschreibung)")}</strong></div>
+            <div class="meta">${escapeHtml(item.type || "")}</div>
+            <div class="meta mono">${escapeHtml(item.artikelnummer)} ·
+              <span class="stock-low">Bestand ${item.lagerbestand} / Min. ${item.mindestmenge}</span>
+            </div>
+          </div>
+          <input type="number" class="qty-input" min="1" value="${nachbestellMengen[item.id]}" data-nb="${item.id}">
+        </div>
+      </div>
+    `).join("")}
+  `).join("");
+  container.querySelectorAll("[data-nb]").forEach(inp => {
+    inp.addEventListener("input", () => { nachbestellMengen[inp.dataset.nb] = Number(inp.value); });
+  });
+}
+
+document.getElementById("nbPdfBtn").addEventListener("click", () => {
+  const list = allItems.filter(i => Number(i.lagerbestand) < Number(i.mindestmenge));
+  buildOrderPdf(list, nachbestellMengen, "Nachbestellung");
+});
+document.getElementById("nbMailBtn").addEventListener("click", () => {
+  const list = allItems.filter(i => Number(i.lagerbestand) < Number(i.mindestmenge));
+  prepareOrderMail(list, nachbestellMengen, "Nachbestellung");
+});
+
+/* -------------------- Ersatzteilsuche -------------------- */
+let lastInfoResultSet = null;
+let infoAllMode = false;
+let infoPage = 0;
+const INFO_PAGE_SIZE = 30;
+
+function showInfoPrevNext(show) {
+  document.getElementById("infoPrevBtn").style.display = show ? "inline-flex" : "none";
+  document.getElementById("infoNextBtn").style.display = show ? "inline-flex" : "none";
+}
+
+function renderInfoAllPage() {
+  const start = infoPage * INFO_PAGE_SIZE;
+  renderInfoResults(allItems.slice(start, start + INFO_PAGE_SIZE));
+  document.getElementById("infoPrevBtn").disabled = infoPage === 0;
+  document.getElementById("infoNextBtn").disabled = start + INFO_PAGE_SIZE >= allItems.length;
+}
+
+document.getElementById("infoShowAllBtn").addEventListener("click", () => {
+  document.getElementById("infoSearch").value = "";
+  document.getElementById("infoSearch2").value = "";
+  infoAllMode = true;
+  infoPage = 0;
+  showInfoPrevNext(true);
+  renderInfoAllPage();
+});
+document.getElementById("infoPrevBtn").addEventListener("click", () => {
+  if (infoPage > 0) { infoPage--; renderInfoAllPage(); }
+});
+document.getElementById("infoNextBtn").addEventListener("click", () => {
+  if ((infoPage + 1) * INFO_PAGE_SIZE < allItems.length) { infoPage++; renderInfoAllPage(); }
+});
+
+function runInfoSearch() {
+  const q = document.getElementById("infoSearch").value;
+  const q2 = document.getElementById("infoSearch2").value;
+  if (q.trim() || q2.trim()) {
+    infoAllMode = false;
+    showInfoPrevNext(false);
+    renderInfoResults(filterItems(q, q2));
+  } else {
+    renderInfoResults([]);
+  }
+}
+document.getElementById("infoSearch").addEventListener("input", runInfoSearch);
+document.getElementById("infoSearch2").addEventListener("input", runInfoSearch);
+document.getElementById("infoScanBtn").addEventListener("click", () => openScanner((text) => {
+  document.getElementById("infoSearch").value = text;
+  runInfoSearch();
+}));
+document.getElementById("addItemBtn").addEventListener("click", () => openItemEditor(null));
+
+/* -------------------- Barcode / QR Scanner -------------------- */
+function openScanner(onResult) {
+  const modal = openModal(`
+    <div class="modal-top"><h3>Barcode / QR-Code scannen</h3><button class="icon-btn" data-close>✕</button></div>
+    <div id="scannerBox" style="margin-top:10px; border-radius:8px; overflow:hidden;"></div>
+    <p class="meta" style="margin-top:8px;">Code vor die Kamera halten. Erkennt Barcodes und QR-Codes.</p>
+  `);
+  let scanner = null;
+  const stop = () => { if (scanner) { scanner.stop().catch(()=>{}); } };
+  modal.querySelectorAll("[data-close]").forEach(b => b.addEventListener("click", stop));
+  modal.addEventListener("click", (e) => { if (e.target === modal) stop(); });
+  try {
+    scanner = new Html5Qrcode("scannerBox");
+    scanner.start(
+      { facingMode: "environment" },
+      { fps: 10, qrbox: 220 },
+      (decodedText) => {
+        stop();
+        modal.remove();
+        onResult(decodedText);
+      },
+      () => {}
+    ).catch((err) => {
+      console.error(err);
+      modal.querySelector("#scannerBox").innerHTML =
+        `<div class="empty-state">Kamera konnte nicht gestartet werden. Bitte Kamera-Zugriff im Browser erlauben.</div>`;
+    });
+  } catch (e) {
+    console.error(e);
+    modal.querySelector("#scannerBox").innerHTML = `<div class="empty-state">Scanner nicht verfügbar.</div>`;
+  }
+}
+
+function renderInfoResults(items) {
+  lastInfoResultSet = items;
+  const container = document.getElementById("infoResults");
+  const searchActive = document.getElementById("infoSearch").value.trim().length > 0
+    || document.getElementById("infoSearch2").value.trim().length > 0;
+  if (items.length === 0) {
+    container.innerHTML = searchActive
+      ? `<div class="empty-state">Kein Ersatzteil gefunden.</div>`
+      : "";
+    return;
+  }
+  container.innerHTML = items.map(item => `
+    <div class="card" data-open="${item.id}" style="cursor:pointer;">
+      <div class="row">
+        <div style="flex:1;">
+          <div class="title"><strong>${escapeHtml(item.beschreibung || "(keine Beschreibung)")}</strong></div>
+          <div class="meta">${escapeHtml(item.type || "")}</div>
+          <div class="meta mono">${escapeHtml(item.artikelnummer)}</div>
+          <div class="meta">Bestand: <strong>${item.lagerbestand ?? 0}</strong></div>
+          ${item.lagerort ? `<div class="meta">Lagerort: ${escapeHtml(item.lagerort)}</div>` : ""}
+        </div>
+        ${isAdmin ? `
+          <div style="display:flex; flex-direction:column; gap:6px;">
+            <button class="icon-btn" data-edit="${item.id}" title="Bearbeiten">✏️</button>
+            <button class="icon-btn" data-delete="${item.id}" title="Löschen">🗑️</button>
+          </div>
+        ` : ""}
+      </div>
+    </div>
+  `).join("");
+  container.querySelectorAll("[data-open]").forEach(card => {
+    card.addEventListener("click", () => openItemDetail(card.dataset.open));
+  });
+  container.querySelectorAll("[data-edit]").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const item = allItems.find(i => i.id === btn.dataset.edit);
+      if (item) openItemEditor(item);
+    });
+  });
+  container.querySelectorAll("[data-delete]").forEach(btn => {
+    btn.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      const item = allItems.find(i => i.id === btn.dataset.delete);
+      if (!item) return;
+      if (!confirm(`"${item.type || item.artikelnummer}" wirklich entfernen? Das kann nicht rückgängig gemacht werden.`)) return;
+      try {
+        await db.collection("items").doc(item.id).delete();
+        toast("Ersatzteil entfernt.");
+      } catch (err) {
+        console.error(err);
+        toast("Fehler beim Entfernen.");
+      }
+    });
+  });
+}
+
+function openItemDetail(itemId) {
+  const item = allItems.find(i => i.id === itemId);
+  if (!item) return;
+  openModal(`
+    <div class="modal-top">
+      <h3>${escapeHtml(item.type || item.artikelnummer)}</h3>
+      <button class="icon-btn" data-close>✕</button>
+    </div>
+    ${item.bild ? `<img src="${item.bild}" style="width:100%;max-height:220px;object-fit:cover;border-radius:8px;margin:10px 0;">` : ""}
+    <div class="meta mono" style="margin-bottom:8px;">Artikelnr.: ${escapeHtml(item.artikelnummer)}</div>
+    ${detailRow("Hersteller", item.hersteller)}
+    ${detailRow("Lieferant", item.lieferant)}
+    ${detailRow("Beschreibung", item.beschreibung, true)}
+    ${detailRow("Verpackungseinheit", item.verpackungseinheit)}
+    ${detailRow("Mindestmenge", item.mindestmenge)}
+    ${detailRow("Lagerbestand", item.lagerbestand, true)}
+    ${detailRow("Lagerort", item.lagerort)}
+    ${detailRow("Regal", item.regal)}
+    ${detailRow("Fach", item.fach)}
+    ${detailRow("Notiz", item.notiz)}
+  `);
+}
+function detailRow(label, value, bold) {
+  if (value === undefined || value === null || value === "") return "";
+  const content = bold ? `<strong>${escapeHtml(value)}</strong>` : escapeHtml(value);
+  return `<div style="margin-bottom:6px;"><span class="meta">${label}: </span>${content}</div>`;
+}
+
+function resizeImageToDataUrl(file, maxDim, quality) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = reject;
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = reject;
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > height && width > maxDim) { height = Math.round(height * (maxDim / width)); width = maxDim; }
+        else if (height > maxDim) { width = Math.round(width * (maxDim / height)); height = maxDim; }
+        const canvas = document.createElement("canvas");
+        canvas.width = width; canvas.height = height;
+        canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL("image/jpeg", quality));
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function openItemEditor(item) {
+  const isNew = !item;
+  item = item || {};
+  const modal = openModal(`
+    <div class="modal-top">
+      <h3>${isNew ? "Neues Ersatzteil" : "Ersatzteil bearbeiten"}</h3>
+      <button class="icon-btn" data-close>✕</button>
+    </div>
+    <label>Type</label><input id="f_type" value="${escapeHtml(item.type||"")}">
+    <label>Hersteller</label><input id="f_hersteller" value="${escapeHtml(item.hersteller||"")}">
+    <label>Lieferant</label><input id="f_lieferant" value="${escapeHtml(item.lieferant||"")}">
+    <label>Beschreibung</label><textarea id="f_beschreibung" rows="2">${escapeHtml(item.beschreibung||"")}</textarea>
+    <div class="field-row">
+      <div><label>Verpackungseinheit</label><input id="f_ve" value="${escapeHtml(item.verpackungseinheit||"")}"></div>
+      <div><label>Mindestmenge</label><input id="f_min" type="number" value="${item.mindestmenge ?? 0}"></div>
+    </div>
+    <div class="field-row">
+      <div><label>Lagerbestand</label><input id="f_bestand" type="number" value="${item.lagerbestand ?? 0}"></div>
+      <div>
+        <label>Bild</label>
+        <input id="f_bildfile" type="file" accept="image/*">
+      </div>
+    </div>
+    <div id="bildPreviewWrap" style="margin-top:8px; display:flex; align-items:center; gap:10px;">
+      ${item.bild ? `<img id="bildPreview" src="${item.bild}" style="max-width:140px;max-height:140px;border-radius:8px;display:block;">` : `<img id="bildPreview" style="max-width:140px;max-height:140px;border-radius:8px;display:none;">`}
+      <button type="button" class="btn ghost" id="removeBildBtn" style="${item.bild ? "" : "display:none;"}">Bild entfernen</button>
+    </div>
+    <div class="field-row">
+      <div><label>Lagerort</label><input id="f_lagerort" value="${escapeHtml(item.lagerort||"")}"></div>
+      <div><label>Regal</label><input id="f_regal" value="${escapeHtml(item.regal||"")}"></div>
+    </div>
+    <label>Fach</label><input id="f_fach" value="${escapeHtml(item.fach||"")}">
+    <label>Notiz</label><textarea id="f_notiz" rows="2">${escapeHtml(item.notiz||"")}</textarea>
+    ${!isNew ? `<div class="meta mono" style="margin-top:10px;">Artikelnr.: ${escapeHtml(item.artikelnummer)}</div>` : ""}
+    <div class="btn-row">
+      <button class="btn" id="saveItemBtn">Speichern</button>
+      <button class="btn ghost" data-close>Abbrechen</button>
+    </div>
+  `);
+  let pendingBild = item.bild || "";
+  modal.querySelector("#f_bildfile").addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    resizeImageToDataUrl(file, 500, 0.72).then((dataUrl) => {
+      pendingBild = dataUrl;
+      const preview = modal.querySelector("#bildPreview");
+      preview.src = dataUrl;
+      preview.style.display = "block";
+      modal.querySelector("#removeBildBtn").style.display = "inline-flex";
+    }).catch((err) => { console.error(err); toast("Bild konnte nicht verarbeitet werden."); });
+  });
+  modal.querySelector("#removeBildBtn").addEventListener("click", () => {
+    pendingBild = "";
+    modal.querySelector("#f_bildfile").value = "";
+    const preview = modal.querySelector("#bildPreview");
+    preview.src = "";
+    preview.style.display = "none";
+    modal.querySelector("#removeBildBtn").style.display = "none";
+  });
+  modal.querySelector("#saveItemBtn").addEventListener("click", async () => {
+    const data = {
+      type: modal.querySelector("#f_type").value.trim(),
+      hersteller: modal.querySelector("#f_hersteller").value.trim(),
+      lieferant: modal.querySelector("#f_lieferant").value.trim(),
+      beschreibung: modal.querySelector("#f_beschreibung").value.trim(),
+      verpackungseinheit: modal.querySelector("#f_ve").value.trim(),
+      mindestmenge: Number(modal.querySelector("#f_min").value) || 0,
+      lagerbestand: Number(modal.querySelector("#f_bestand").value) || 0,
+      bild: pendingBild,
+      lagerort: modal.querySelector("#f_lagerort").value.trim(),
+      regal: modal.querySelector("#f_regal").value.trim(),
+      fach: modal.querySelector("#f_fach").value.trim(),
+      notiz: modal.querySelector("#f_notiz").value.trim(),
+    };
+    try {
+      if (isNew) {
+        data.artikelnummer = await generateArtikelnummer();
+        await db.collection("items").add(data);
+        toast("Ersatzteil angelegt.");
+      } else {
+        await db.collection("items").doc(item.id).update(data);
+        toast("Ersatzteil aktualisiert.");
+      }
+      modal.remove();
+    } catch (e) {
+      console.error(e);
+      toast("Fehler beim Speichern.");
+    }
+  });
+}
+
+function updateIndivBadge() {
+  const n = Object.keys(indivCart).length;
+  document.getElementById("indivSub").innerHTML =
+    n > 0 ? `<span class="badge">${n} Position${n === 1 ? "" : "en"} in der Liste</span>` : "Eigene Bestellliste zusammenstellen";
+}
+
+/* -------------------- Individuelle Bestellung -------------------- */
+let indivCart = {}; // itemId -> menge
+let indivCartNames = {}; // itemId -> Name, wer das Ersatzteil hinzugefügt hat
+const indivSearchEl = document.getElementById("indivSearch");
+const indivSearch2El = document.getElementById("indivSearch2");
+function renderIndivSearchResults() {
+  const q = indivSearchEl.value;
+  const q2 = indivSearch2El.value;
+  const container = document.getElementById("indivSearchResults");
+  if (!q.trim() && !q2.trim()) { container.innerHTML = ""; return; }
+  const results = filterItems(q, q2).slice(0, 15);
+  container.innerHTML = results.map(item => `
+    <div class="card">
+      <div class="row">
+        <div style="flex:1;">
+          <div class="title"><strong>${escapeHtml(item.beschreibung || "(keine Beschreibung)")}</strong></div>
+          <div class="meta">${escapeHtml(item.type || "")}</div>
+          <div class="meta mono">${escapeHtml(item.artikelnummer)}</div>
+        </div>
+      </div>
+      <div class="row" style="margin-top:10px; gap:6px;">
+        <button class="icon-btn" data-step="-1" data-target="addqty-${item.id}">−</button>
+        <input type="number" class="qty-input" min="1" value="1" id="addqty-${item.id}">
+        <button class="icon-btn" data-step="1" data-target="addqty-${item.id}">+</button>
+        <button class="btn secondary" data-add="${item.id}" style="margin-left:auto;">+ Hinzufügen</button>
+      </div>
+    </div>
+  `).join("");
+  container.querySelectorAll("[data-step]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const input = document.getElementById(btn.dataset.target);
+      const step = Number(btn.dataset.step);
+      input.value = Math.max(1, (Number(input.value) || 1) + step);
+    });
+  });
+  container.querySelectorAll("[data-add]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const nameVal = document.getElementById("indivName").value.trim();
+      if (!nameVal) { toast("Bitte zuerst deinen Namen eingeben."); return; }
+      const qtyInput = document.getElementById("addqty-" + btn.dataset.add);
+      const menge = Math.max(1, Number(qtyInput.value) || 1);
+      indivCart[btn.dataset.add] = (indivCart[btn.dataset.add] || 0) + menge;
+      indivCartNames[btn.dataset.add] = nameVal;
+      renderIndivCart();
+      indivSearchEl.value = "";
+      indivSearch2El.value = "";
+      container.innerHTML = "";
+      toast("Zur Bestellliste hinzugefügt.");
+    });
+  });
+}
+indivSearchEl.addEventListener("input", renderIndivSearchResults);
+indivSearch2El.addEventListener("input", renderIndivSearchResults);
+
+function renderIndivCart() {
+  const container = document.getElementById("indivCart");
+  const ids = Object.keys(indivCart);
+  document.getElementById("indivActions").style.display = ids.length ? "flex" : "none";
+  updateIndivBadge();
+  if (ids.length === 0) { container.innerHTML = `<div class="empty-state">Noch keine Positionen in der Bestellliste.</div>`; return; }
+  container.innerHTML = ids.map(id => {
+    const item = allItems.find(i => i.id === id);
+    if (!item) return "";
+    return `
+      <div class="card">
+        <div class="row">
+          <div style="flex:1;">
+            <div class="title"><strong>${escapeHtml(item.beschreibung || "(keine Beschreibung)")}</strong></div>
+            <div class="meta">${escapeHtml(item.type || "")}</div>
+            <div class="meta mono">${escapeHtml(item.artikelnummer)}</div>
+          </div>
+          <button class="icon-btn" data-icstep="-1" data-target="${id}">−</button>
+          <input type="number" class="qty-input" min="1" value="${indivCart[id]}" data-icqty="${id}">
+          <button class="icon-btn" data-icstep="1" data-target="${id}">+</button>
+          <button class="icon-btn" data-icremove="${id}">✕</button>
+        </div>
+        <div class="meta" style="margin-top:6px;">Hinzugefügt von: ${escapeHtml(indivCartNames[id] || "-")}</div>
+      </div>
+    `;
+  }).join("");
+  container.querySelectorAll("[data-icstep]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const id = btn.dataset.target;
+      const step = Number(btn.dataset.icstep);
+      indivCart[id] = Math.max(1, (indivCart[id] || 1) + step);
+      renderIndivCart();
+    });
+  });
+  container.querySelectorAll("[data-icqty]").forEach(inp => {
+    inp.addEventListener("input", () => { indivCart[inp.dataset.icqty] = Number(inp.value); });
+  });
+  container.querySelectorAll("[data-icremove]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      delete indivCart[btn.dataset.icremove];
+      delete indivCartNames[btn.dataset.icremove];
+      renderIndivCart();
+    });
+  });
+}
+
+document.getElementById("indivPdfBtn").addEventListener("click", () => {
+  const items = Object.keys(indivCart).map(id => allItems.find(i => i.id === id)).filter(Boolean);
+  buildOrderPdf(items, indivCart, "Individuelle Bestellung");
+});
+document.getElementById("indivMailBtn").addEventListener("click", () => {
+  const items = Object.keys(indivCart).map(id => allItems.find(i => i.id === id)).filter(Boolean);
+  prepareOrderMail(items, indivCart, "Individuelle Bestellung");
+});
+
+/* -------------------- PDF & E-Mail -------------------- */
+function buildOrderPdf(items, mengen, titel) {
+  if (!items.length) { toast("Keine Positionen vorhanden."); return; }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  doc.setFontSize(16);
+  doc.text(titel, 14, 18);
+  doc.setFontSize(10);
+  doc.text(new Date().toLocaleString("de-DE"), 14, 25);
+  let y = 36;
+  doc.setFontSize(11);
+  doc.text("Artikelnr.", 14, y);
+  doc.text("Bezeichnung", 55, y);
+  doc.text("Lieferant", 130, y);
+  doc.text("Menge", 180, y);
+  y += 4;
+  doc.line(14, y, 196, y);
+  y += 6;
+  items.forEach(item => {
+    if (y > 280) { doc.addPage(); y = 20; }
+    doc.text(String(item.artikelnummer || ""), 14, y);
+    doc.text(String(item.type || "").slice(0, 38), 55, y);
+    doc.text(String(item.lieferant || "").slice(0, 22), 130, y);
+    doc.text(String(mengen[item.id] ?? 1), 180, y);
+    y += 7;
+  });
+  doc.save(`${titel.replace(/\s+/g,"_")}_${Date.now()}.pdf`);
+  toast("PDF wurde erstellt und heruntergeladen.");
+}
+
+async function prepareOrderMail(items, mengen, titel) {
+  if (!items.length) { toast("Keine Positionen vorhanden."); return; }
+  let empfaengerListe = [];
+  if (db) {
+    try {
+      const snap = await db.collection("lieferantenListe").get();
+      empfaengerListe = snap.docs.map(d => d.data());
+    } catch (e) { console.warn(e); }
+  }
+  const optionsHtml = empfaengerListe.map(e => `<option value="${escapeHtml(e.email)}">${escapeHtml(e.name)} (${escapeHtml(e.email)})</option>`).join("");
+  const modal = openModal(`
+    <div class="modal-top"><h3>Bestellung per E-Mail</h3><button class="icon-btn" data-close>✕</button></div>
+    <label>Empfänger auswählen</label>
+    <select id="mailSelect"><option value="">— frei eingeben —</option>${optionsHtml}</select>
+    <label>oder E-Mail-Adresse eingeben</label>
+    <input id="mailAddress" type="email" placeholder="name@firma.de">
+    <p class="meta" style="margin-top:10px;">
+      Hinweis: Das zuvor erstellte PDF muss der E-Mail manuell als Anhang hinzugefügt werden
+      — ein direkter PDF-Anhang aus dem Browser heraus ist ohne zusätzliches Backend nicht möglich.
+    </p>
+    <div class="btn-row">
+      <button class="btn" id="openMailBtn">E-Mail-Programm öffnen</button>
+      <button class="btn ghost" data-close>Abbrechen</button>
+    </div>
+  `);
+  modal.querySelector("#mailSelect").addEventListener("change", (e) => {
+    if (e.target.value) modal.querySelector("#mailAddress").value = e.target.value;
+  });
+  modal.querySelector("#openMailBtn").addEventListener("click", () => {
+    const to = modal.querySelector("#mailAddress").value.trim();
+    if (!to) { toast("Bitte eine E-Mail-Adresse wählen oder eingeben."); return; }
+    const bodyLines = items.map(i => `${i.artikelnummer}  |  ${i.type || ""}  |  Lieferant: ${i.lieferant || "-"}  |  Menge: ${mengen[i.id] ?? 1}`);
+    const body = `${titel}\n${new Date().toLocaleDateString("de-DE")}\n\n${bodyLines.join("\n")}\n\n(PDF bitte manuell anhängen)`;
+    const subject = `${titel} – ${new Date().toLocaleDateString("de-DE")}`;
+    window.location.href = `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    modal.remove();
+  });
+}
+
+/* -------------------- App-Passwortschutz -------------------- */
+const lockScreen = document.getElementById("lockScreen");
+const appPasswordInput = document.getElementById("appPassword");
+const unlockBtn = document.getElementById("unlockBtn");
+const lockError = document.getElementById("lockError");
+
+async function checkAppPassword(pw) {
+  let expected = "1234"; // Fallback, solange kein Wert in Firestore hinterlegt ist
+  if (db) {
+    try {
+      const snap = await db.collection("meta").doc("zugang").get();
+      if (snap.exists && snap.data().passwort) expected = String(snap.data().passwort);
+    } catch (e) { console.warn(e); }
+  }
+  return pw === expected;
+}
+
+async function tryUnlock() {
+  const pw = appPasswordInput.value;
+  unlockBtn.disabled = true;
+  const ok = await checkAppPassword(pw);
+  unlockBtn.disabled = false;
+  if (ok) {
+    lockScreen.style.display = "none";
+    try { sessionStorage.setItem("lagerapp_unlocked", "1"); } catch (e) {}
+    loadItems();
+  } else {
+    lockError.textContent = "Falsches Passwort.";
+  }
+}
+unlockBtn.addEventListener("click", tryUnlock);
+appPasswordInput.addEventListener("keydown", (e) => { if (e.key === "Enter") tryUnlock(); });
+
+/* -------------------- Start -------------------- */
+(function initLock() {
+  let alreadyUnlocked = false;
+  try { alreadyUnlocked = sessionStorage.getItem("lagerapp_unlocked") === "1"; } catch (e) {}
+  if (alreadyUnlocked) {
+    lockScreen.style.display = "none";
+    loadItems();
+  } else {
+    appPasswordInput.focus();
+  }
+})();
+</script>
+</body>
+</html>
