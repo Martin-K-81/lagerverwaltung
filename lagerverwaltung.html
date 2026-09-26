@@ -259,7 +259,10 @@
     <label>Name (wer bucht)</label>
     <input type="text" id="buchenName" placeholder="Dein Name" />
     <label style="margin-top:14px;">Ersatzteil suchen</label>
-    <input type="text" id="buchenSearch" placeholder="Suche: Artikelnummer, Type, Hersteller, Beschreibung…" />
+    <div class="row" style="gap:8px;">
+      <input type="text" id="buchenSearch" placeholder="Suche: Artikelnummer, Type, Hersteller, Beschreibung…" style="flex:1;">
+      <button class="icon-btn" id="buchenScanBtn" title="Barcode/QR scannen">📷</button>
+    </div>
     <input type="text" id="buchenSearch2" placeholder="Weiterer Suchbegriff (UND)" style="margin-top:8px;" />
     <div id="buchenResults" style="margin-top:12px;"></div>
   </div>
@@ -308,14 +311,17 @@
     <label>Name (wer bestellt)</label>
     <input type="text" id="indivName" placeholder="Dein Name" />
     <label style="margin-top:14px;">Ersatzteil suchen</label>
-    <input type="text" id="indivSearch" placeholder="Ersatzteil suchen und hinzufügen…" />
+    <div class="row" style="gap:8px;">
+      <input type="text" id="indivSearch" placeholder="Ersatzteil suchen und hinzufügen…" style="flex:1;">
+      <button class="icon-btn" id="indivScanBtn" title="Barcode/QR scannen">📷</button>
+    </div>
     <input type="text" id="indivSearch2" placeholder="Weiterer Suchbegriff (UND)" style="margin-top:8px;" />
     <div id="indivSearchResults" style="margin-top:8px;"></div>
     <div class="group-title">Bestellliste</div>
     <div id="indivCart"></div>
     <div class="btn-row" id="indivActions" style="display:none;">
       <button class="btn" id="indivPdfBtn">PDF erstellen</button>
-      <button class="btn secondary" id="indivMailBtn">Per E-Mail vorbereiten</button>
+      <button class="btn warn" id="indivClearBtn">Alles löschen</button>
     </div>
   </div>
 
@@ -549,7 +555,7 @@ function updateNachbestellBadge() {
 function matchesTerm(item, term) {
   const q = term.trim().toLowerCase();
   if (!q) return true;
-  return [item.artikelnummer, item.type, item.hersteller, item.lieferant, item.beschreibung, item.lagerort, item.regal, item.fach]
+  return [item.artikelnummer, item.artikelnr, item.type, item.hersteller, item.lieferant, item.beschreibung, item.lagerort, item.regal, item.fach]
     .filter(Boolean).some(f => String(f).toLowerCase().includes(q));
 }
 function filterItems(query, query2) {
@@ -579,6 +585,10 @@ const buchenSearchEl = document.getElementById("buchenSearch");
 const buchenSearch2El = document.getElementById("buchenSearch2");
 buchenSearchEl.addEventListener("input", () => renderBuchenResults(buchenSearchEl.value, buchenSearch2El.value));
 buchenSearch2El.addEventListener("input", () => renderBuchenResults(buchenSearchEl.value, buchenSearch2El.value));
+document.getElementById("buchenScanBtn").addEventListener("click", () => openScanner((text) => {
+  buchenSearchEl.value = text;
+  renderBuchenResults(buchenSearchEl.value, buchenSearch2El.value);
+}));
 
 function renderBuchenResults(query, query2) {
   const results = filterItems(query, query2);
@@ -590,8 +600,8 @@ function renderBuchenResults(query, query2) {
       <div class="row">
         <div style="flex:1;">
           <div class="title"><strong>${escapeHtml(item.beschreibung || "(keine Beschreibung)")}</strong></div>
-          <div class="meta">${escapeHtml(item.type || "")}</div>
-          <div class="meta mono">${escapeHtml(item.artikelnummer)}</div>
+          <div class="meta">Type: ${escapeHtml(item.type || "")}</div>
+          <div class="meta mono">Interne Nr.: ${escapeHtml(item.artikelnummer || "")}</div>
           <div class="meta">Bestand: <strong>${item.lagerbestand ?? 0}</strong></div>
           ${item.lagerort ? `<div class="meta">Lagerort: ${escapeHtml(item.lagerort)}</div>` : ""}
         </div>
@@ -643,7 +653,7 @@ function renderBuchungshistorie(query) {
   const q = (query || "").trim().toLowerCase();
   if (q) {
     list = list.filter(b =>
-      [b.name, b.artikelnummer, b.type, b.beschreibung]
+      [b.name, b.artikelnr, b.artikelnummer, b.type, b.beschreibung]
         .filter(Boolean).some(f => String(f).toLowerCase().includes(q))
     );
   }
@@ -657,7 +667,7 @@ function renderBuchungshistorie(query) {
           <div style="flex:1;">
             <div class="title"><strong>${escapeHtml(b.beschreibung || "(keine Beschreibung)")}</strong></div>
             <div class="meta">${escapeHtml(b.type || "")}</div>
-            <div class="meta mono">${escapeHtml(b.artikelnummer || "")}</div>
+            <div class="meta mono">${escapeHtml(b.artikelnr || b.artikelnummer || "")}</div>
           </div>
           <div style="text-align:right;">
             <div class="meta" style="${b.typ === 'ein' ? 'color:var(--ok);' : 'color:var(--warn);'} font-weight:600;">${typLabel}</div>
@@ -733,6 +743,7 @@ async function doBuchung(itemId) {
       beschreibung: item?.beschreibung || "",
       type: item?.type || "",
       artikelnummer: item?.artikelnummer || "",
+      artikelnr: item?.artikelnr || "",
       menge,
       name,
       typ: currentBuchungTyp,
@@ -775,7 +786,7 @@ function renderNachbestellung() {
           <div>
             <div class="title"><strong>${escapeHtml(item.beschreibung || "(keine Beschreibung)")}</strong></div>
             <div class="meta">${escapeHtml(item.type || "")}</div>
-            <div class="meta mono">${escapeHtml(item.artikelnummer)} ·
+            <div class="meta mono">Artikelnr.: ${escapeHtml(item.artikelnr || "")} ·
               <span class="stock-low">Bestand ${item.lagerbestand} / Min. ${item.mindestmenge}</span>
             </div>
           </div>
@@ -899,8 +910,8 @@ function renderInfoResults(items) {
       <div class="row">
         <div style="flex:1;">
           <div class="title"><strong>${escapeHtml(item.beschreibung || "(keine Beschreibung)")}</strong></div>
-          <div class="meta">${escapeHtml(item.type || "")}</div>
-          <div class="meta mono">${escapeHtml(item.artikelnummer)}</div>
+          <div class="meta">Type: ${escapeHtml(item.type || "")}</div>
+          <div class="meta mono">Interne Nr.: ${escapeHtml(item.artikelnummer || "")}</div>
           <div class="meta">Bestand: <strong>${item.lagerbestand ?? 0}</strong></div>
           ${item.lagerort ? `<div class="meta">Lagerort: ${escapeHtml(item.lagerort)}</div>` : ""}
         </div>
@@ -928,7 +939,7 @@ function renderInfoResults(items) {
       e.stopPropagation();
       const item = allItems.find(i => i.id === btn.dataset.delete);
       if (!item) return;
-      if (!confirm(`"${item.type || item.artikelnummer}" wirklich entfernen? Das kann nicht rückgängig gemacht werden.`)) return;
+      if (!confirm(`"${item.type || item.artikelnr || item.artikelnummer}" wirklich entfernen? Das kann nicht rückgängig gemacht werden.`)) return;
       try {
         await db.collection("items").doc(item.id).delete();
         toast("Ersatzteil entfernt.");
@@ -945,17 +956,19 @@ function openItemDetail(itemId) {
   if (!item) return;
   openModal(`
     <div class="modal-top">
-      <h3>${escapeHtml(item.type || item.artikelnummer)}</h3>
+      <h3>${escapeHtml(item.type || item.artikelnr || item.artikelnummer)}</h3>
       <button class="icon-btn" data-close>✕</button>
     </div>
     ${item.bild ? `<img src="${item.bild}" style="width:100%;max-height:220px;object-fit:cover;border-radius:8px;margin:10px 0;">` : ""}
-    <div class="meta mono" style="margin-bottom:8px;">Artikelnr.: ${escapeHtml(item.artikelnummer)}</div>
+    <div class="meta mono" style="margin-bottom:8px;">Interne Nr.: ${escapeHtml(item.artikelnummer)}</div>
+    ${detailRow("Beschreibung", item.beschreibung, true)}
+    ${detailRow("Type", item.type)}
     ${detailRow("Hersteller", item.hersteller)}
     ${detailRow("Lieferant", item.lieferant)}
-    ${detailRow("Beschreibung", item.beschreibung, true)}
-    ${detailRow("Verpackungseinheit", item.verpackungseinheit)}
-    ${detailRow("Mindestmenge", item.mindestmenge)}
+    ${detailRow("Artikelnr.", item.artikelnr)}
     ${detailRow("Lagerbestand", item.lagerbestand, true)}
+    ${detailRow("Mindestmenge", item.mindestmenge)}
+    ${detailRow("Verpackungseinheit", item.verpackungseinheit)}
     ${detailRow("Lagerort", item.lagerort)}
     ${detailRow("Regal", item.regal)}
     ${detailRow("Fach", item.fach)}
@@ -998,21 +1011,27 @@ function openItemEditor(item) {
       <h3>${isNew ? "Neues Ersatzteil" : "Ersatzteil bearbeiten"}</h3>
       <button class="icon-btn" data-close>✕</button>
     </div>
-    <label>Type</label><input id="f_type" value="${escapeHtml(item.type||"")}">
-    <label>Hersteller</label><input id="f_hersteller" value="${escapeHtml(item.hersteller||"")}">
-    <label>Lieferant</label><input id="f_lieferant" value="${escapeHtml(item.lieferant||"")}">
+    ${!isNew ? `<div class="meta mono" style="margin-bottom:10px;">Interne Nr.: ${escapeHtml(item.artikelnummer)}</div>` : ""}
     <label>Beschreibung</label><textarea id="f_beschreibung" rows="2">${escapeHtml(item.beschreibung||"")}</textarea>
     <div class="field-row">
-      <div><label>Verpackungseinheit</label><input id="f_ve" value="${escapeHtml(item.verpackungseinheit||"")}"></div>
-      <div><label>Mindestmenge</label><input id="f_min" type="number" value="${item.mindestmenge ?? 0}"></div>
+      <div><label>Type</label><input id="f_type" value="${escapeHtml(item.type||"")}"></div>
+      <div><label>Hersteller</label><input id="f_hersteller" value="${escapeHtml(item.hersteller||"")}"></div>
+    </div>
+    <div class="field-row">
+      <div><label>Lieferant</label><input id="f_lieferant" value="${escapeHtml(item.lieferant||"")}"></div>
+      <div><label>Artikelnr.</label><input id="f_artikelnr" value="${escapeHtml(item.artikelnr||"")}"></div>
     </div>
     <div class="field-row">
       <div><label>Lagerbestand</label><input id="f_bestand" type="number" value="${item.lagerbestand ?? 0}"></div>
-      <div>
-        <label>Bild</label>
-        <input id="f_bildfile" type="file" accept="image/*">
-      </div>
+      <div><label>Mindestmenge</label><input id="f_min" type="number" value="${item.mindestmenge ?? 0}"></div>
     </div>
+    <label>Verpackungseinheit</label><input id="f_ve" value="${escapeHtml(item.verpackungseinheit||"")}">
+    <label>Bild</label>
+    <div class="field-row">
+      <div><input id="f_bildfile" type="file" accept="image/*"></div>
+      <div><input id="f_bildcamera" type="file" accept="image/*" capture="environment"></div>
+    </div>
+    <div class="meta" style="margin-top:4px;">Links: Bild auswählen · Rechts: Foto mit Kamera aufnehmen</div>
     <div id="bildPreviewWrap" style="margin-top:8px; display:flex; align-items:center; gap:10px;">
       ${item.bild ? `<img id="bildPreview" src="${item.bild}" style="max-width:140px;max-height:140px;border-radius:8px;display:block;">` : `<img id="bildPreview" style="max-width:140px;max-height:140px;border-radius:8px;display:none;">`}
       <button type="button" class="btn ghost" id="removeBildBtn" style="${item.bild ? "" : "display:none;"}">Bild entfernen</button>
@@ -1023,15 +1042,13 @@ function openItemEditor(item) {
     </div>
     <label>Fach</label><input id="f_fach" value="${escapeHtml(item.fach||"")}">
     <label>Notiz</label><textarea id="f_notiz" rows="2">${escapeHtml(item.notiz||"")}</textarea>
-    ${!isNew ? `<div class="meta mono" style="margin-top:10px;">Artikelnr.: ${escapeHtml(item.artikelnummer)}</div>` : ""}
     <div class="btn-row">
       <button class="btn" id="saveItemBtn">Speichern</button>
       <button class="btn ghost" data-close>Abbrechen</button>
     </div>
   `);
   let pendingBild = item.bild || "";
-  modal.querySelector("#f_bildfile").addEventListener("change", (e) => {
-    const file = e.target.files[0];
+  const handleImageFile = (file) => {
     if (!file) return;
     resizeImageToDataUrl(file, 500, 0.72).then((dataUrl) => {
       pendingBild = dataUrl;
@@ -1040,10 +1057,13 @@ function openItemEditor(item) {
       preview.style.display = "block";
       modal.querySelector("#removeBildBtn").style.display = "inline-flex";
     }).catch((err) => { console.error(err); toast("Bild konnte nicht verarbeitet werden."); });
-  });
+  };
+  modal.querySelector("#f_bildfile").addEventListener("change", (e) => handleImageFile(e.target.files[0]));
+  modal.querySelector("#f_bildcamera").addEventListener("change", (e) => handleImageFile(e.target.files[0]));
   modal.querySelector("#removeBildBtn").addEventListener("click", () => {
     pendingBild = "";
     modal.querySelector("#f_bildfile").value = "";
+    modal.querySelector("#f_bildcamera").value = "";
     const preview = modal.querySelector("#bildPreview");
     preview.src = "";
     preview.style.display = "none";
@@ -1051,13 +1071,14 @@ function openItemEditor(item) {
   });
   modal.querySelector("#saveItemBtn").addEventListener("click", async () => {
     const data = {
+      beschreibung: modal.querySelector("#f_beschreibung").value.trim(),
       type: modal.querySelector("#f_type").value.trim(),
       hersteller: modal.querySelector("#f_hersteller").value.trim(),
       lieferant: modal.querySelector("#f_lieferant").value.trim(),
-      beschreibung: modal.querySelector("#f_beschreibung").value.trim(),
-      verpackungseinheit: modal.querySelector("#f_ve").value.trim(),
-      mindestmenge: Number(modal.querySelector("#f_min").value) || 0,
+      artikelnr: modal.querySelector("#f_artikelnr").value.trim(),
       lagerbestand: Number(modal.querySelector("#f_bestand").value) || 0,
+      mindestmenge: Number(modal.querySelector("#f_min").value) || 0,
+      verpackungseinheit: modal.querySelector("#f_ve").value.trim(),
       bild: pendingBild,
       lagerort: modal.querySelector("#f_lagerort").value.trim(),
       regal: modal.querySelector("#f_regal").value.trim(),
@@ -1103,8 +1124,8 @@ function renderIndivSearchResults() {
       <div class="row">
         <div style="flex:1;">
           <div class="title"><strong>${escapeHtml(item.beschreibung || "(keine Beschreibung)")}</strong></div>
-          <div class="meta">${escapeHtml(item.type || "")}</div>
-          <div class="meta mono">${escapeHtml(item.artikelnummer)}</div>
+          <div class="meta">Type: ${escapeHtml(item.type || "")}</div>
+          <div class="meta mono">Interne Nr.: ${escapeHtml(item.artikelnummer || "")}</div>
         </div>
       </div>
       <div class="row" style="margin-top:10px; gap:6px;">
@@ -1140,6 +1161,10 @@ function renderIndivSearchResults() {
 }
 indivSearchEl.addEventListener("input", renderIndivSearchResults);
 indivSearch2El.addEventListener("input", renderIndivSearchResults);
+document.getElementById("indivScanBtn").addEventListener("click", () => openScanner((text) => {
+  indivSearchEl.value = text;
+  renderIndivSearchResults();
+}));
 
 function renderIndivCart() {
   const container = document.getElementById("indivCart");
@@ -1155,8 +1180,8 @@ function renderIndivCart() {
         <div class="row">
           <div style="flex:1;">
             <div class="title"><strong>${escapeHtml(item.beschreibung || "(keine Beschreibung)")}</strong></div>
-            <div class="meta">${escapeHtml(item.type || "")}</div>
-            <div class="meta mono">${escapeHtml(item.artikelnummer)}</div>
+            <div class="meta">Type: ${escapeHtml(item.type || "")}</div>
+            <div class="meta mono">Interne Nr.: ${escapeHtml(item.artikelnummer || "")}</div>
           </div>
           <button class="icon-btn" data-icstep="-1" data-target="${id}">−</button>
           <input type="number" class="qty-input" min="1" value="${indivCart[id]}" data-icqty="${id}">
@@ -1187,18 +1212,91 @@ function renderIndivCart() {
   });
 }
 
-document.getElementById("indivPdfBtn").addEventListener("click", () => {
+function buildIndivOrderPdfDoc(items, mengen, names) {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: "landscape" });
+  const sorted = [...items].sort((a, b) =>
+    String(a.lieferant || "").localeCompare(String(b.lieferant || ""), "de")
+  );
+  const cols = [
+    { label: "Pos.", x: 10 },
+    { label: "Beschreibung", x: 22 },
+    { label: "Type", x: 80 },
+    { label: "Artikelnummer", x: 112 },
+    { label: "Hersteller", x: 148 },
+    { label: "Lieferant", x: 182 },
+    { label: "Menge", x: 216 },
+    { label: "Name", x: 236 },
+  ];
+  doc.setFontSize(16);
+  doc.text("Individuelle Bestellung", 14, 16);
+  doc.setFontSize(10);
+  doc.text(new Date().toLocaleString("de-DE"), 14, 22);
+  let y = 32;
+  doc.setFontSize(10);
+  cols.forEach(c => doc.text(c.label, c.x, y));
+  y += 4;
+  doc.line(10, y, 287, y);
+  y += 6;
+  doc.setFontSize(9);
+  let prevLieferant = null;
+  sorted.forEach((item, idx) => {
+    if (y > 195) { doc.addPage("a4", "landscape"); y = 20; }
+    if (prevLieferant !== null && (item.lieferant || "") !== prevLieferant) {
+      doc.setDrawColor(180);
+      doc.line(10, y - 4, 287, y - 4);
+    }
+    doc.text(`Pos. ${idx + 1}`, cols[0].x, y);
+    doc.text(String(item.beschreibung || "").slice(0, 32), cols[1].x, y);
+    doc.text(String(item.type || "").slice(0, 20), cols[2].x, y);
+    doc.text(String(item.artikelnr || "").slice(0, 20), cols[3].x, y);
+    doc.text(String(item.hersteller || "").slice(0, 20), cols[4].x, y);
+    doc.text(String(item.lieferant || "").slice(0, 20), cols[5].x, y);
+    doc.text(String(mengen[item.id] ?? 1), cols[6].x, y);
+    doc.text(String(names[item.id] || "").slice(0, 20), cols[7].x, y);
+    prevLieferant = item.lieferant || "";
+    y += 8;
+  });
+  return doc;
+}
+
+document.getElementById("indivPdfBtn").addEventListener("click", async () => {
   const items = Object.keys(indivCart).map(id => allItems.find(i => i.id === id)).filter(Boolean);
-  buildOrderPdf(items, indivCart, "Individuelle Bestellung");
+  if (!items.length) { toast("Keine Positionen vorhanden."); return; }
+  const doc = buildIndivOrderPdfDoc(items, indivCart, indivCartNames);
+  const heute = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+  const dateiname = `Bestellung_${heute}.pdf`;
+  if (window.showSaveFilePicker) {
+    try {
+      const handle = await window.showSaveFilePicker({
+        suggestedName: dateiname,
+        types: [{ description: "PDF-Datei", accept: { "application/pdf": [".pdf"] } }]
+      });
+      const writable = await handle.createWritable();
+      await writable.write(doc.output("blob"));
+      await writable.close();
+      toast("PDF gespeichert.");
+    } catch (err) {
+      if (err && err.name !== "AbortError") {
+        console.error(err);
+        toast("Speichern abgebrochen oder fehlgeschlagen.");
+      }
+    }
+  } else {
+    doc.save(dateiname);
+  }
 });
-document.getElementById("indivMailBtn").addEventListener("click", () => {
-  const items = Object.keys(indivCart).map(id => allItems.find(i => i.id === id)).filter(Boolean);
-  prepareOrderMail(items, indivCart, "Individuelle Bestellung");
+
+document.getElementById("indivClearBtn").addEventListener("click", () => {
+  if (!confirm("Wirklich alle Positionen aus der Bestellliste entfernen?")) return;
+  indivCart = {};
+  indivCartNames = {};
+  renderIndivCart();
+  toast("Bestellliste geleert.");
 });
 
 /* -------------------- PDF & E-Mail -------------------- */
-function buildOrderPdf(items, mengen, titel) {
-  if (!items.length) { toast("Keine Positionen vorhanden."); return; }
+function buildOrderPdfDoc(items, mengen, titel) {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
   doc.setFontSize(16);
@@ -1216,12 +1314,18 @@ function buildOrderPdf(items, mengen, titel) {
   y += 6;
   items.forEach(item => {
     if (y > 280) { doc.addPage(); y = 20; }
-    doc.text(String(item.artikelnummer || ""), 14, y);
+    doc.text(String(item.artikelnr || ""), 14, y);
     doc.text(String(item.type || "").slice(0, 38), 55, y);
     doc.text(String(item.lieferant || "").slice(0, 22), 130, y);
     doc.text(String(mengen[item.id] ?? 1), 180, y);
     y += 7;
   });
+  return doc;
+}
+
+function buildOrderPdf(items, mengen, titel) {
+  if (!items.length) { toast("Keine Positionen vorhanden."); return; }
+  const doc = buildOrderPdfDoc(items, mengen, titel);
   doc.save(`${titel.replace(/\s+/g,"_")}_${Date.now()}.pdf`);
   toast("PDF wurde erstellt und heruntergeladen.");
 }
@@ -1257,7 +1361,7 @@ async function prepareOrderMail(items, mengen, titel) {
   modal.querySelector("#openMailBtn").addEventListener("click", () => {
     const to = modal.querySelector("#mailAddress").value.trim();
     if (!to) { toast("Bitte eine E-Mail-Adresse wählen oder eingeben."); return; }
-    const bodyLines = items.map(i => `${i.artikelnummer}  |  ${i.type || ""}  |  Lieferant: ${i.lieferant || "-"}  |  Menge: ${mengen[i.id] ?? 1}`);
+    const bodyLines = items.map(i => `${i.artikelnr || ""}  |  ${i.type || ""}  |  Lieferant: ${i.lieferant || "-"}  |  Menge: ${mengen[i.id] ?? 1}`);
     const body = `${titel}\n${new Date().toLocaleDateString("de-DE")}\n\n${bodyLines.join("\n")}\n\n(PDF bitte manuell anhängen)`;
     const subject = `${titel} – ${new Date().toLocaleDateString("de-DE")}`;
     window.location.href = `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
