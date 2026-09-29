@@ -295,6 +295,10 @@
       <button class="icon-btn" id="infoPrevBtn" style="display:none;">&lt;</button>
       <button class="icon-btn" id="infoNextBtn" style="display:none;">&gt;</button>
     </div>
+    <div class="btn-row" style="margin-bottom:10px; display:none;" id="backupRestoreRow">
+      <button class="btn ghost" id="backupBtn">Backup</button>
+      <button class="btn ghost" id="restoreBtn">Restore</button>
+    </div>
     <div class="row" style="gap:8px;">
       <input type="text" id="infoSearch" placeholder="Suche: Artikelnummer, Type, Hersteller, Lagerort…" style="flex:1;">
       <button class="icon-btn" id="infoScanBtn" title="Barcode/QR scannen">📷</button>
@@ -526,6 +530,7 @@ function updateAdminUI() {
   btn.classList.toggle("admin-on", isAdmin);
   document.getElementById("adminAddRow").style.display = isAdmin ? "block" : "none";
   document.getElementById("verlaufBtn").style.display = isAdmin ? "flex" : "none";
+  document.getElementById("backupRestoreRow").style.display = isAdmin ? "flex" : "none";
   renderInfoResults(lastInfoResultSet || []);
 }
 
@@ -1145,6 +1150,78 @@ document.getElementById("infoShowAllBtn").addEventListener("click", () => {
   infoPage = 0;
   showInfoPrevNext(true);
   renderInfoAllPage();
+});
+
+document.getElementById("backupBtn").addEventListener("click", async () => {
+  if (!db) { toast("Firebase ist nicht konfiguriert."); return; }
+  if (!confirm(`Backup der aktuellen Ersatzteilliste (${allItems.length} Artikel) erstellen? Ein vorhandenes Backup wird dabei überschrieben.`)) return;
+  try {
+    // altes Backup zuerst leeren
+    let deleted = 0;
+    while (true) {
+      const snap = await db.collection("backup").limit(400).get();
+      if (snap.empty) break;
+      const delBatch = db.batch();
+      snap.docs.forEach(d => delBatch.delete(d.ref));
+      await delBatch.commit();
+      deleted += snap.size;
+      if (snap.size < 400) break;
+    }
+    // aktuelle Artikel in "backup" sichern
+    const chunkSize = 400;
+    for (let i = 0; i < allItems.length; i += chunkSize) {
+      const chunk = allItems.slice(i, i + chunkSize);
+      const batch = db.batch();
+      chunk.forEach(item => {
+        const { id, ...data } = item;
+        batch.set(db.collection("backup").doc(id), data);
+      });
+      await batch.commit();
+    }
+    await db.collection("backup").doc("_meta").set({
+      erstellt: firebase.firestore.FieldValue.serverTimestamp(),
+      anzahl: allItems.length
+    });
+    toast(`Backup erstellt (${allItems.length} Artikel).`);
+  } catch (e) {
+    console.error(e);
+    toast("Fehler beim Erstellen des Backups.");
+  }
+});
+
+document.getElementById("restoreBtn").addEventListener("click", async () => {
+  if (!db) { toast("Firebase ist nicht konfiguriert."); return; }
+  if (!confirm("Kompletten Reset aus dem letzten Backup durchführen? ALLE aktuellen Ersatzteile werden gelöscht und durch den Backup-Stand ersetzt. Das kann nicht rückgängig gemacht werden.")) return;
+  try {
+    const snap = await db.collection("backup").get();
+    const backupDocs = snap.docs.filter(d => d.id !== "_meta");
+    if (backupDocs.length === 0) { toast("Kein Backup vorhanden."); return; }
+
+    // 1) aktuelle Ersatzteilliste komplett löschen
+    let deleted = 0;
+    while (true) {
+      const itemsSnap = await db.collection("items").limit(400).get();
+      if (itemsSnap.empty) break;
+      const delBatch = db.batch();
+      itemsSnap.docs.forEach(d => delBatch.delete(d.ref));
+      await delBatch.commit();
+      deleted += itemsSnap.size;
+      if (itemsSnap.size < 400) break;
+    }
+
+    // 2) Backup-Stand vollständig als neue Ersatzteilliste einspielen
+    const chunkSize = 400;
+    for (let i = 0; i < backupDocs.length; i += chunkSize) {
+      const chunk = backupDocs.slice(i, i + chunkSize);
+      const batch = db.batch();
+      chunk.forEach(d => batch.set(db.collection("items").doc(d.id), d.data()));
+      await batch.commit();
+    }
+    toast(`Reset abgeschlossen: ${backupDocs.length} Artikel wiederhergestellt.`);
+  } catch (e) {
+    console.error(e);
+    toast("Fehler beim Wiederherstellen.");
+  }
 });
 document.getElementById("infoPrevBtn").addEventListener("click", () => {
   if (infoPage > 0) { infoPage--; renderInfoAllPage(); }
