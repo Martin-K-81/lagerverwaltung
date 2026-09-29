@@ -1339,10 +1339,15 @@ function openItemEditor(item) {
     <label>Verpackungseinheit</label><input id="f_ve" value="${escapeHtml(item.verpackungseinheit||"")}">
     <label>Bild</label>
     <div class="field-row">
-      <div><input id="f_bildfile" type="file" accept="image/*"></div>
-      <div><input id="f_bildcamera" type="file" accept="image/*" capture="environment"></div>
+      <div>
+        <button type="button" class="btn secondary" id="f_bildfileBtn" style="width:100%;">Datei auswählen</button>
+        <input id="f_bildfile" type="file" accept="image/*" style="display:none;">
+      </div>
+      <div>
+        <button type="button" class="icon-btn" id="f_bildcameraBtn" title="Foto aufnehmen" style="width:100%; height:42px;">📷</button>
+        <input id="f_bildcamera" type="file" accept="image/*" capture="environment" style="display:none;">
+      </div>
     </div>
-    <div class="meta" style="margin-top:4px;">Links: Bild auswählen · Rechts: Foto mit Kamera aufnehmen</div>
     <div id="bildPreviewWrap" style="margin-top:8px; display:flex; align-items:center; gap:10px;">
       ${item.bild ? `<img id="bildPreview" src="${item.bild}" style="max-width:140px;max-height:140px;border-radius:8px;display:block;">` : `<img id="bildPreview" style="max-width:140px;max-height:140px;border-radius:8px;display:none;">`}
       <button type="button" class="btn ghost" id="removeBildBtn" style="${item.bild ? "" : "display:none;"}">Bild entfernen</button>
@@ -1369,6 +1374,8 @@ function openItemEditor(item) {
       modal.querySelector("#removeBildBtn").style.display = "inline-flex";
     }).catch((err) => { console.error(err); toast("Bild konnte nicht verarbeitet werden."); });
   };
+  modal.querySelector("#f_bildfileBtn").addEventListener("click", () => modal.querySelector("#f_bildfile").click());
+  modal.querySelector("#f_bildcameraBtn").addEventListener("click", () => modal.querySelector("#f_bildcamera").click());
   modal.querySelector("#f_bildfile").addEventListener("change", (e) => handleImageFile(e.target.files[0]));
   modal.querySelector("#f_bildcamera").addEventListener("change", (e) => handleImageFile(e.target.files[0]));
   modal.querySelector("#removeBildBtn").addEventListener("click", () => {
