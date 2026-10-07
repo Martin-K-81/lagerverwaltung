@@ -1036,7 +1036,7 @@ document.getElementById("projektPdfBtn").addEventListener("click", () => {
   const ids = Object.keys(currentProjekt.positionen);
   const items = ids.map(id => allItems.find(i => i.id === id)).filter(Boolean);
   if (!items.length) { toast("Keine Positionen vorhanden."); return; }
-  const titel = `Projektbestellung – ${currentProjekt.name}${currentProjekt.besteller ? " – Besteller: " + currentProjekt.besteller : ""}`;
+  const titel = `Projektbestellung - ${currentProjekt.name}${currentProjekt.besteller ? " - Besteller: " + currentProjekt.besteller : ""}`;
   const doc = buildIndivOrderPdfDoc(items, currentProjekt.positionen, {}, titel);
   doc.save(`Projektbestellung_${currentProjekt.name.replace(/\s+/g,"_")}_${new Date().toISOString().slice(0,10)}.pdf`);
 });
