@@ -425,6 +425,7 @@
     <div class="btn-row" style="margin-top:8px;">
       <button class="btn secondary" id="erwAlleAnwaehlenBtn">Alles anwählen</button>
       <button class="btn secondary" id="erwAlleAbwaehlenBtn">Alles abwählen</button>
+      <button class="btn ghost" id="erwAllesLeerenBtn">Alles leeren</button>
     </div>
     <div id="erwResults" style="margin-top:12px;"></div>
   </div>
@@ -1137,7 +1138,6 @@ let lastErwItems = [];
 function runErwSearch() {
   const q = erwSearchEl.value;
   const q2 = erwSearch2El.value;
-  erwSelected.clear();
   renderErwResults((q.trim() || q2.trim()) ? filterItems(q, q2) : []);
   updateErwAuswahlInfo();
 }
@@ -1155,6 +1155,11 @@ document.getElementById("erwAlleAnwaehlenBtn").addEventListener("click", () => {
   updateErwAuswahlInfo();
 });
 document.getElementById("erwAlleAbwaehlenBtn").addEventListener("click", () => {
+  lastErwItems.forEach(item => erwSelected.delete(item.id));
+  renderErwResults(lastErwItems);
+  updateErwAuswahlInfo();
+});
+document.getElementById("erwAllesLeerenBtn").addEventListener("click", () => {
   erwSelected.clear();
   renderErwResults(lastErwItems);
   updateErwAuswahlInfo();
