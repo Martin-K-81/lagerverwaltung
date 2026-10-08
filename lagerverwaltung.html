@@ -247,6 +247,16 @@
         <div class="label">Projektbestellung</div>
         <div class="sub">Bestellungen je Projekt verwalten</div>
       </button>
+      <button class="menu-btn wide" data-view="inventur">
+        <div class="glyph">📋</div>
+        <div class="label">Inventur</div>
+        <div class="sub">Funktion folgt</div>
+      </button>
+      <button class="menu-btn wide" data-view="erweitert" id="erweiterteBearbeitungBtn" style="display:none;">
+        <div class="glyph">🛠️</div>
+        <div class="label">Erweiterte Bearbeitung</div>
+        <div class="sub">Mehrere Ersatzteile gleichzeitig bearbeiten oder löschen (nur Admin)</div>
+      </button>
       <button class="menu-btn wide" data-view="verlauf" id="verlaufBtn" style="display:none;">
         <div class="glyph">📜</div>
         <div class="label">Buchungshistorie</div>
@@ -266,9 +276,13 @@
     <label style="margin-top:14px;">Ersatzteil suchen</label>
     <div class="row" style="gap:8px;">
       <input type="text" id="buchenSearch" placeholder="Suche: Artikelnummer, Type, Hersteller, Beschreibung…" style="flex:1;">
+      <button class="icon-btn" id="buchenSearchClearBtn" title="Feld leeren">✕</button>
       <button class="icon-btn" id="buchenScanBtn" title="Barcode/QR scannen">📷</button>
     </div>
-    <input type="text" id="buchenSearch2" placeholder="Weiterer Suchbegriff (UND)" style="margin-top:8px;" />
+    <div class="row" style="gap:8px; margin-top:8px;">
+      <input type="text" id="buchenSearch2" placeholder="Weiterer Suchbegriff (UND)" style="flex:1;">
+      <button class="icon-btn" id="buchenSearch2ClearBtn" title="Feld leeren">✕</button>
+    </div>
     <div id="buchenResults" style="margin-top:12px;"></div>
   </div>
 
@@ -291,8 +305,10 @@
       <h2 class="view-title">Ersatzteilsuche</h2>
     </div>
     <div class="btn-row" style="margin-bottom:10px;">
+      <button class="btn secondary" id="addItemBtn">+ Neues Ersatzteil anlegen</button>
       <button class="btn secondary" id="infoShowAllBtn">Alle anzeigen</button>
       <button class="icon-btn" id="infoPrevBtn" style="display:none;">&lt;</button>
+      <span id="infoPageIndicator" class="meta mono" style="display:none; align-self:center;"></span>
       <button class="icon-btn" id="infoNextBtn" style="display:none;">&gt;</button>
     </div>
     <div class="btn-row" style="margin-bottom:10px; display:none;" id="backupRestoreRow">
@@ -301,11 +317,12 @@
     </div>
     <div class="row" style="gap:8px;">
       <input type="text" id="infoSearch" placeholder="Suche: Artikelnummer, Type, Hersteller, Lagerort…" style="flex:1;">
+      <button class="icon-btn" id="infoSearchClearBtn" title="Feld leeren">✕</button>
       <button class="icon-btn" id="infoScanBtn" title="Barcode/QR scannen">📷</button>
     </div>
-    <input type="text" id="infoSearch2" placeholder="Weiterer Suchbegriff (UND)" style="margin-top:8px;" />
-    <div class="btn-row" id="adminAddRow" style="display:none;">
-      <button class="btn secondary" id="addItemBtn">+ Neues Ersatzteil anlegen</button>
+    <div class="row" style="gap:8px; margin-top:8px;">
+      <input type="text" id="infoSearch2" placeholder="Weiterer Suchbegriff (UND)" style="flex:1;" />
+      <button class="icon-btn" id="infoSearch2ClearBtn" title="Feld leeren">✕</button>
     </div>
     <div id="infoResults" style="margin-top:12px;"></div>
   </div>
@@ -321,9 +338,13 @@
     <label style="margin-top:14px;">Ersatzteil suchen</label>
     <div class="row" style="gap:8px;">
       <input type="text" id="indivSearch" placeholder="Ersatzteil suchen und hinzufügen…" style="flex:1;">
+      <button class="icon-btn" id="indivSearchClearBtn" title="Feld leeren">✕</button>
       <button class="icon-btn" id="indivScanBtn" title="Barcode/QR scannen">📷</button>
     </div>
-    <input type="text" id="indivSearch2" placeholder="Weiterer Suchbegriff (UND)" style="margin-top:8px;" />
+    <div class="row" style="gap:8px; margin-top:8px;">
+      <input type="text" id="indivSearch2" placeholder="Weiterer Suchbegriff (UND)" style="flex:1;">
+      <button class="icon-btn" id="indivSearch2ClearBtn" title="Feld leeren">✕</button>
+    </div>
     <div id="indivSearchResults" style="margin-top:8px;"></div>
     <div class="group-title">Bestellliste</div>
     <div id="indivCart"></div>
@@ -357,15 +378,55 @@
     <label style="margin-top:14px;">Ersatzteil suchen</label>
     <div class="row" style="gap:8px;">
       <input type="text" id="projektSearch" placeholder="Ersatzteil suchen und hinzufügen…" style="flex:1;">
+      <button class="icon-btn" id="projektSearchClearBtn" title="Feld leeren">✕</button>
       <button class="icon-btn" id="projektScanBtn" title="Barcode/QR scannen">📷</button>
     </div>
-    <input type="text" id="projektSearch2" placeholder="Weiterer Suchbegriff (UND)" style="margin-top:8px;" />
+    <div class="row" style="gap:8px; margin-top:8px;">
+      <input type="text" id="projektSearch2" placeholder="Weiterer Suchbegriff (UND)" style="flex:1;">
+      <button class="icon-btn" id="projektSearch2ClearBtn" title="Feld leeren">✕</button>
+    </div>
     <div id="projektSearchResults" style="margin-top:8px;"></div>
     <div class="group-title">Positionen</div>
     <div id="projektPositionen"></div>
     <div class="btn-row" id="projektActions" style="display:none;">
       <button class="btn" id="projektPdfBtn">PDF erstellen</button>
     </div>
+  </div>
+
+  <!-- INVENTUR (Platzhalter) -->
+  <div class="view" id="view-inventur">
+    <div class="view-header">
+      <button class="back-btn" data-back>← Zurück</button>
+      <h2 class="view-title">Inventur</h2>
+    </div>
+    <div class="empty-state">Diese Funktion wird später ergänzt.</div>
+  </div>
+
+  <!-- ERWEITERTE BEARBEITUNG -->
+  <div class="view" id="view-erweitert">
+    <div class="view-header">
+      <button class="back-btn" data-back>← Zurück</button>
+      <h2 class="view-title">Erweiterte Bearbeitung</h2>
+    </div>
+    <div class="btn-row">
+      <button class="btn" id="erwBearbeitenBtn">Bearbeiten</button>
+      <button class="btn warn" id="erwLoeschenBtn">Sammellöschen</button>
+    </div>
+    <div class="meta" id="erwAuswahlInfo" style="margin:6px 0 10px;">0 Ersatzteile ausgewählt</div>
+    <div class="row" style="gap:8px;">
+      <input type="text" id="erwSearch" placeholder="Suche: Artikelnummer, Type, Hersteller, Lagerort…" style="flex:1;">
+      <button class="icon-btn" id="erwSearchClearBtn" title="Feld leeren">✕</button>
+      <button class="icon-btn" id="erwScanBtn" title="Barcode/QR scannen">📷</button>
+    </div>
+    <div class="row" style="gap:8px; margin-top:8px;">
+      <input type="text" id="erwSearch2" placeholder="Weiterer Suchbegriff (UND)" style="flex:1;">
+      <button class="icon-btn" id="erwSearch2ClearBtn" title="Feld leeren">✕</button>
+    </div>
+    <div class="btn-row" style="margin-top:8px;">
+      <button class="btn secondary" id="erwAlleAnwaehlenBtn">Alles anwählen</button>
+      <button class="btn secondary" id="erwAlleAbwaehlenBtn">Alles abwählen</button>
+    </div>
+    <div id="erwResults" style="margin-top:12px;"></div>
   </div>
 
   <!-- BUCHUNGSHISTORIE -->
@@ -477,6 +538,15 @@ function onMenuSelect(target) {
   } else if (target === "projektliste") {
     showView("projektliste");
     loadProjektListe();
+  } else if (target === "inventur") {
+    showView("inventur");
+  } else if (target === "erweitert") {
+    showView("erweitert");
+    document.getElementById("erwSearch").value = "";
+    document.getElementById("erwSearch2").value = "";
+    erwSelected.clear();
+    renderErwResults([]);
+    updateErwAuswahlInfo();
   }
 }
 
@@ -528,8 +598,8 @@ function updateAdminUI() {
   const btn = document.getElementById("adminBtn");
   btn.textContent = isAdmin ? "🔓" : "🔒";
   btn.classList.toggle("admin-on", isAdmin);
-  document.getElementById("adminAddRow").style.display = isAdmin ? "block" : "none";
   document.getElementById("verlaufBtn").style.display = isAdmin ? "flex" : "none";
+  document.getElementById("erweiterteBearbeitungBtn").style.display = isAdmin ? "flex" : "none";
   document.getElementById("backupRestoreRow").style.display = isAdmin ? "flex" : "none";
   renderInfoResults(lastInfoResultSet || []);
 }
@@ -640,6 +710,14 @@ document.getElementById("buchenScanBtn").addEventListener("click", () => openSca
   buchenSearchEl.value = text;
   renderBuchenResults(buchenSearchEl.value, buchenSearch2El.value);
 }));
+document.getElementById("buchenSearchClearBtn").addEventListener("click", () => {
+  buchenSearchEl.value = "";
+  renderBuchenResults(buchenSearchEl.value, buchenSearch2El.value);
+});
+document.getElementById("buchenSearch2ClearBtn").addEventListener("click", () => {
+  buchenSearch2El.value = "";
+  renderBuchenResults(buchenSearchEl.value, buchenSearch2El.value);
+});
 
 function renderBuchenResults(query, query2) {
   const results = filterItems(query, query2);
@@ -983,6 +1061,14 @@ document.getElementById("projektScanBtn").addEventListener("click", () => openSc
   projektSearchEl.value = text;
   renderProjektSearchResults();
 }));
+document.getElementById("projektSearchClearBtn").addEventListener("click", () => {
+  projektSearchEl.value = "";
+  renderProjektSearchResults();
+});
+document.getElementById("projektSearch2ClearBtn").addEventListener("click", () => {
+  projektSearch2El.value = "";
+  renderProjektSearchResults();
+});
 
 function renderProjektPositionen() {
   const container = document.getElementById("projektPositionen");
@@ -1039,6 +1125,160 @@ document.getElementById("projektPdfBtn").addEventListener("click", () => {
   const titel = `Projektbestellung - ${currentProjekt.name}${currentProjekt.besteller ? " - Besteller: " + currentProjekt.besteller : ""}`;
   const doc = buildIndivOrderPdfDoc(items, currentProjekt.positionen, {}, titel);
   doc.save(`Projektbestellung_${currentProjekt.name.replace(/\s+/g,"_")}_${new Date().toISOString().slice(0,10)}.pdf`);
+});
+
+/* -------------------- Erweiterte Bearbeitung -------------------- */
+let erwSelected = new Set();
+const erwSearchEl = document.getElementById("erwSearch");
+const erwSearch2El = document.getElementById("erwSearch2");
+
+let lastErwItems = [];
+
+function runErwSearch() {
+  const q = erwSearchEl.value;
+  const q2 = erwSearch2El.value;
+  erwSelected.clear();
+  renderErwResults((q.trim() || q2.trim()) ? filterItems(q, q2) : []);
+  updateErwAuswahlInfo();
+}
+erwSearchEl.addEventListener("input", runErwSearch);
+erwSearch2El.addEventListener("input", runErwSearch);
+document.getElementById("erwSearchClearBtn").addEventListener("click", () => { erwSearchEl.value = ""; runErwSearch(); });
+document.getElementById("erwSearch2ClearBtn").addEventListener("click", () => { erwSearch2El.value = ""; runErwSearch(); });
+document.getElementById("erwScanBtn").addEventListener("click", () => openScanner((text) => {
+  erwSearchEl.value = text;
+  runErwSearch();
+}));
+document.getElementById("erwAlleAnwaehlenBtn").addEventListener("click", () => {
+  lastErwItems.forEach(item => erwSelected.add(item.id));
+  renderErwResults(lastErwItems);
+  updateErwAuswahlInfo();
+});
+document.getElementById("erwAlleAbwaehlenBtn").addEventListener("click", () => {
+  erwSelected.clear();
+  renderErwResults(lastErwItems);
+  updateErwAuswahlInfo();
+});
+
+function updateErwAuswahlInfo() {
+  const n = erwSelected.size;
+  document.getElementById("erwAuswahlInfo").textContent = `${n} Ersatzteil${n === 1 ? "" : "e"} ausgewählt`;
+}
+
+function renderErwResults(items) {
+  lastErwItems = items;
+  const container = document.getElementById("erwResults");
+  const searchActive = erwSearchEl.value.trim().length > 0 || erwSearch2El.value.trim().length > 0;
+  if (items.length === 0) {
+    container.innerHTML = searchActive ? `<div class="empty-state">Kein Ersatzteil gefunden.</div>` : "";
+    return;
+  }
+  container.innerHTML = items.map(item => `
+    <div class="card">
+      <div class="row">
+        <input type="checkbox" class="erw-checkbox" data-sel="${item.id}" ${erwSelected.has(item.id) ? "checked" : ""} style="width:20px; height:20px; flex-shrink:0;">
+        <div style="flex:1;">
+          <div class="title"><strong>${escapeHtml(item.beschreibung || "(keine Beschreibung)")}</strong></div>
+          <div class="meta">Type: ${escapeHtml(item.type || "")}</div>
+          <div class="meta mono">Interne Nr.: ${escapeHtml(item.artikelnummer || "")}</div>
+          <div class="meta">Bestand: <strong>${item.lagerbestand ?? 0}</strong></div>
+        </div>
+      </div>
+    </div>
+  `).join("");
+  container.querySelectorAll("[data-sel]").forEach(cb => {
+    cb.addEventListener("change", () => {
+      if (cb.checked) erwSelected.add(cb.dataset.sel); else erwSelected.delete(cb.dataset.sel);
+      updateErwAuswahlInfo();
+    });
+  });
+}
+
+const ERW_FIELDS = [
+  { key: "beschreibung", label: "Beschreibung", type: "textarea" },
+  { key: "type", label: "Type", type: "text" },
+  { key: "hersteller", label: "Hersteller", type: "text" },
+  { key: "lieferant", label: "Lieferant", type: "text" },
+  { key: "artikelnr", label: "Artikelnr.", type: "text" },
+  { key: "lagerbestand", label: "Lagerbestand", type: "number" },
+  { key: "mindestmenge", label: "Mindestmenge", type: "number" },
+  { key: "verpackungseinheit", label: "Verpackungseinheit", type: "text" },
+  { key: "lagerort", label: "Lagerort", type: "text" },
+  { key: "regal", label: "Regal", type: "text" },
+  { key: "fach", label: "Fach", type: "text" },
+  { key: "notiz", label: "Notiz", type: "textarea" },
+];
+
+document.getElementById("erwBearbeitenBtn").addEventListener("click", () => {
+  if (erwSelected.size === 0) { toast("Bitte mindestens ein Ersatzteil auswählen."); return; }
+  const items = [...erwSelected].map(id => allItems.find(i => i.id === id)).filter(Boolean);
+  const fieldsHtml = ERW_FIELDS.map(f => {
+    const values = items.map(it => (it[f.key] ?? "").toString());
+    const allSame = values.every(v => v === values[0]);
+    const mixed = !allSame;
+    const val = mixed ? "" : values[0];
+    const tag = f.type === "textarea"
+      ? `<textarea id="erwf_${f.key}" rows="2" data-mixed="${mixed}" placeholder="${mixed ? "unterschiedlich" : ""}">${mixed ? "" : escapeHtml(val)}</textarea>`
+      : `<input id="erwf_${f.key}" type="${f.type}" data-mixed="${mixed}" placeholder="${mixed ? "unterschiedlich" : ""}" value="${mixed ? "" : escapeHtml(val)}">`;
+    return `<label>${f.label}</label>${tag}`;
+  }).join("");
+  const modal = openModal(`
+    <div class="modal-top"><h3>Mehrere Ersatzteile bearbeiten (${items.length})</h3><button class="icon-btn" data-close>✕</button></div>
+    <p class="meta">Felder mit grauem Hinweis "unterschiedlich" bleiben bei den einzelnen Artikeln unverändert, solange nichts eingetragen wird. Ein eingetragener Wert wird auf alle ausgewählten Artikel übernommen.</p>
+    ${fieldsHtml}
+    <div class="btn-row">
+      <button class="btn" id="erwSaveBtn">Speichern</button>
+      <button class="btn ghost" data-close>Abbrechen</button>
+    </div>
+  `);
+  modal.querySelector("#erwSaveBtn").addEventListener("click", async () => {
+    const updateData = {};
+    ERW_FIELDS.forEach(f => {
+      const el = modal.querySelector("#erwf_" + f.key);
+      const wasMixed = el.dataset.mixed === "true";
+      const current = el.value.trim();
+      if (wasMixed && current === "") return; // unverändert lassen
+      updateData[f.key] = f.type === "number" ? (Number(current) || 0) : current;
+    });
+    if (Object.keys(updateData).length === 0) { toast("Keine Änderungen vorgenommen."); modal.remove(); return; }
+    try {
+      const chunkSize = 400;
+      const ids = [...erwSelected];
+      for (let i = 0; i < ids.length; i += chunkSize) {
+        const chunk = ids.slice(i, i + chunkSize);
+        const batch = db.batch();
+        chunk.forEach(id => batch.update(db.collection("items").doc(id), updateData));
+        await batch.commit();
+      }
+      toast(`${ids.length} Ersatzteile aktualisiert.`);
+      modal.remove();
+    } catch (e) {
+      console.error(e);
+      toast("Fehler beim Speichern.");
+    }
+  });
+});
+
+document.getElementById("erwLoeschenBtn").addEventListener("click", async () => {
+  if (erwSelected.size === 0) { toast("Bitte mindestens ein Ersatzteil auswählen."); return; }
+  if (!confirm(`${erwSelected.size} ausgewählte Ersatzteile wirklich unwiderruflich löschen?`)) return;
+  try {
+    const ids = [...erwSelected];
+    const chunkSize = 400;
+    for (let i = 0; i < ids.length; i += chunkSize) {
+      const chunk = ids.slice(i, i + chunkSize);
+      const batch = db.batch();
+      chunk.forEach(id => batch.delete(db.collection("items").doc(id)));
+      await batch.commit();
+    }
+    erwSelected.clear();
+    updateErwAuswahlInfo();
+    runErwSearch();
+    toast(`${ids.length} Ersatzteile gelöscht.`);
+  } catch (e) {
+    console.error(e);
+    toast("Fehler beim Löschen.");
+  }
 });
 
 async function doBuchung(itemId) {
@@ -1134,6 +1374,7 @@ const INFO_PAGE_SIZE = 30;
 function showInfoPrevNext(show) {
   document.getElementById("infoPrevBtn").style.display = show ? "inline-flex" : "none";
   document.getElementById("infoNextBtn").style.display = show ? "inline-flex" : "none";
+  document.getElementById("infoPageIndicator").style.display = show ? "inline-flex" : "none";
 }
 
 function renderInfoAllPage() {
@@ -1141,6 +1382,8 @@ function renderInfoAllPage() {
   renderInfoResults(allItems.slice(start, start + INFO_PAGE_SIZE));
   document.getElementById("infoPrevBtn").disabled = infoPage === 0;
   document.getElementById("infoNextBtn").disabled = start + INFO_PAGE_SIZE >= allItems.length;
+  const totalPages = Math.max(1, Math.ceil(allItems.length / INFO_PAGE_SIZE));
+  document.getElementById("infoPageIndicator").textContent = `${infoPage + 1}/${totalPages}`;
 }
 
 document.getElementById("infoShowAllBtn").addEventListener("click", () => {
@@ -1243,6 +1486,14 @@ function runInfoSearch() {
 }
 document.getElementById("infoSearch").addEventListener("input", runInfoSearch);
 document.getElementById("infoSearch2").addEventListener("input", runInfoSearch);
+document.getElementById("infoSearchClearBtn").addEventListener("click", () => {
+  document.getElementById("infoSearch").value = "";
+  runInfoSearch();
+});
+document.getElementById("infoSearch2ClearBtn").addEventListener("click", () => {
+  document.getElementById("infoSearch2").value = "";
+  runInfoSearch();
+});
 document.getElementById("infoScanBtn").addEventListener("click", () => openScanner((text) => {
   document.getElementById("infoSearch").value = text;
   runInfoSearch();
@@ -1303,12 +1554,10 @@ function renderInfoResults(items) {
           <div class="meta">Bestand: <strong>${item.lagerbestand ?? 0}</strong></div>
           ${item.lagerort ? `<div class="meta">Lagerort: ${escapeHtml(item.lagerort)}</div>` : ""}
         </div>
-        ${isAdmin ? `
-          <div style="display:flex; flex-direction:column; gap:6px;">
-            <button class="icon-btn" data-edit="${item.id}" title="Bearbeiten">✏️</button>
-            <button class="icon-btn" data-delete="${item.id}" title="Löschen">🗑️</button>
-          </div>
-        ` : ""}
+        <div style="display:flex; flex-direction:column; gap:6px;">
+          <button class="icon-btn" data-edit="${item.id}" title="Bearbeiten">✏️</button>
+          <button class="icon-btn" data-delete="${item.id}" title="Löschen">🗑️</button>
+        </div>
       </div>
     </div>
   `).join("");
@@ -1319,7 +1568,9 @@ function renderInfoResults(items) {
     btn.addEventListener("click", (e) => {
       e.stopPropagation();
       const item = allItems.find(i => i.id === btn.dataset.edit);
-      if (item) openItemEditor(item);
+      if (!item) return;
+      if (!confirm(`"${item.beschreibung || item.type || item.artikelnr || item.artikelnummer}" wirklich bearbeiten?`)) return;
+      openItemEditor(item);
     });
   });
   container.querySelectorAll("[data-delete]").forEach(btn => {
@@ -1560,6 +1811,14 @@ document.getElementById("indivScanBtn").addEventListener("click", () => openScan
   indivSearchEl.value = text;
   renderIndivSearchResults();
 }));
+document.getElementById("indivSearchClearBtn").addEventListener("click", () => {
+  indivSearchEl.value = "";
+  renderIndivSearchResults();
+});
+document.getElementById("indivSearch2ClearBtn").addEventListener("click", () => {
+  indivSearch2El.value = "";
+  renderIndivSearchResults();
+});
 
 function renderIndivCart() {
   const container = document.getElementById("indivCart");
