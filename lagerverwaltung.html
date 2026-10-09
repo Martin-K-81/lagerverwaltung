@@ -146,7 +146,8 @@
   }
   .card .title { font-weight: 600; font-size: 15px; }
   .card .meta { font-size: 12.5px; color: var(--ink-soft); margin-top: 2px; }
-  .card .row { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  .row { display: flex; align-items: center; gap: 10px; }
+  .card .row { justify-content: space-between; }
   .stock-low { color: var(--warn); font-weight: 600; }
   .thumb {
     width: 44px; height: 44px; border-radius: 6px; object-fit: cover;
@@ -235,7 +236,7 @@
       <button class="menu-btn" data-view="ersatzteilsuche">
         <div class="glyph">🔍</div>
         <div class="label">Ersatzteilsuche</div>
-        <div class="sub">Infos nachschlagen</div>
+        <div class="sub" id="ersatzteilCount">Infos nachschlagen</div>
       </button>
       <button class="menu-btn wide" data-view="individuell">
         <div class="glyph">✏️</div>
@@ -282,6 +283,11 @@
     <div class="row" style="gap:8px; margin-top:8px;">
       <input type="text" id="buchenSearch2" placeholder="Weiterer Suchbegriff (UND)" style="flex:1;">
       <button class="icon-btn" id="buchenSearch2ClearBtn" title="Feld leeren">✕</button>
+    </div>
+    <div class="btn-row" style="margin-top:8px;">
+      <button class="icon-btn" id="buchenPrevBtn" style="display:none;">&lt;</button>
+      <span id="buchenPageIndicator" class="meta mono" style="display:none; align-self:center;"></span>
+      <button class="icon-btn" id="buchenNextBtn" style="display:none;">&gt;</button>
     </div>
     <div id="buchenResults" style="margin-top:12px;"></div>
   </div>
@@ -345,6 +351,11 @@
       <input type="text" id="indivSearch2" placeholder="Weiterer Suchbegriff (UND)" style="flex:1;">
       <button class="icon-btn" id="indivSearch2ClearBtn" title="Feld leeren">✕</button>
     </div>
+    <div class="btn-row" style="margin-top:8px;">
+      <button class="icon-btn" id="indivPrevBtn" style="display:none;">&lt;</button>
+      <span id="indivPageIndicator" class="meta mono" style="display:none; align-self:center;"></span>
+      <button class="icon-btn" id="indivNextBtn" style="display:none;">&gt;</button>
+    </div>
     <div id="indivSearchResults" style="margin-top:8px;"></div>
     <div class="group-title">Bestellliste</div>
     <div id="indivCart"></div>
@@ -385,6 +396,11 @@
       <input type="text" id="projektSearch2" placeholder="Weiterer Suchbegriff (UND)" style="flex:1;">
       <button class="icon-btn" id="projektSearch2ClearBtn" title="Feld leeren">✕</button>
     </div>
+    <div class="btn-row" style="margin-top:8px;">
+      <button class="icon-btn" id="projektPrevBtn" style="display:none;">&lt;</button>
+      <span id="projektPageIndicator" class="meta mono" style="display:none; align-self:center;"></span>
+      <button class="icon-btn" id="projektNextBtn" style="display:none;">&gt;</button>
+    </div>
     <div id="projektSearchResults" style="margin-top:8px;"></div>
     <div class="group-title">Positionen</div>
     <div id="projektPositionen"></div>
@@ -393,13 +409,32 @@
     </div>
   </div>
 
-  <!-- INVENTUR (Platzhalter) -->
+  <!-- INVENTUR -->
   <div class="view" id="view-inventur">
     <div class="view-header">
       <button class="back-btn" data-back>← Zurück</button>
       <h2 class="view-title">Inventur</h2>
     </div>
-    <div class="empty-state">Diese Funktion wird später ergänzt.</div>
+    <div class="btn-row">
+      <button class="btn" id="invStartBtn">Inventur starten</button>
+      <button class="btn warn" id="invAbbrechenBtn">Inventur abbrechen</button>
+      <span class="meta" id="invCounter" style="align-self:center;"></span>
+    </div>
+    <div class="row" style="gap:8px; margin-top:12px;">
+      <input type="text" id="invSearch" placeholder="Suche: Artikelnummer, Type, Hersteller, Lagerort…" style="flex:1;">
+      <button class="icon-btn" id="invSearchClearBtn" title="Feld leeren">✕</button>
+      <button class="icon-btn" id="invScanBtn" title="Barcode/QR scannen">📷</button>
+    </div>
+    <div class="row" style="gap:8px; margin-top:8px;">
+      <input type="text" id="invSearch2" placeholder="Weiterer Suchbegriff (UND)" style="flex:1;">
+      <button class="icon-btn" id="invSearch2ClearBtn" title="Feld leeren">✕</button>
+    </div>
+    <div class="btn-row" style="margin-top:8px;">
+      <button class="icon-btn" id="invPrevBtn" style="display:none;">&lt;</button>
+      <span id="invPageIndicator" class="meta mono" style="display:none; align-self:center;"></span>
+      <button class="icon-btn" id="invNextBtn" style="display:none;">&gt;</button>
+    </div>
+    <div id="invResults" style="margin-top:12px;"></div>
   </div>
 
   <!-- ERWEITERTE BEARBEITUNG -->
@@ -409,6 +444,7 @@
       <h2 class="view-title">Erweiterte Bearbeitung</h2>
     </div>
     <div class="btn-row">
+      <button class="btn secondary" id="erwShowAllBtn">Alle anzeigen</button>
       <button class="btn" id="erwBearbeitenBtn">Bearbeiten</button>
       <button class="btn warn" id="erwLoeschenBtn">Sammellöschen</button>
     </div>
@@ -426,6 +462,11 @@
       <button class="btn secondary" id="erwAlleAnwaehlenBtn">Alles anwählen</button>
       <button class="btn secondary" id="erwAlleAbwaehlenBtn">Alles abwählen</button>
       <button class="btn ghost" id="erwAllesLeerenBtn">Alles leeren</button>
+    </div>
+    <div class="btn-row" style="margin-top:8px;">
+      <button class="icon-btn" id="erwPrevBtn" style="display:none;">&lt;</button>
+      <span id="erwPageIndicator" class="meta mono" style="display:none; align-self:center;"></span>
+      <button class="icon-btn" id="erwNextBtn" style="display:none;">&gt;</button>
     </div>
     <div id="erwResults" style="margin-top:12px;"></div>
   </div>
@@ -523,9 +564,8 @@ function onMenuSelect(target) {
     document.getElementById("infoSearch").value = "";
     document.getElementById("infoSearch2").value = "";
     infoAllMode = false;
-    infoPage = 0;
-    showInfoPrevNext(false);
-    renderInfoResults([]);
+    infoPageState.page = 0;
+    computeAndRenderInfo();
   } else if (target === "individuell") {
     showView("individuell");
     document.getElementById("indivSearch").value = "";
@@ -541,12 +581,17 @@ function onMenuSelect(target) {
     loadProjektListe();
   } else if (target === "inventur") {
     showView("inventur");
+    document.getElementById("invSearch").value = "";
+    document.getElementById("invSearch2").value = "";
+    renderInvList();
   } else if (target === "erweitert") {
     showView("erweitert");
     document.getElementById("erwSearch").value = "";
     document.getElementById("erwSearch2").value = "";
     erwSelected.clear();
-    renderErwResults([]);
+    erwFullList = [];
+    erwPageState.page = 0;
+    renderErwResults();
     updateErwAuswahlInfo();
   }
 }
@@ -633,6 +678,28 @@ function openModal(innerHtml) {
   document.body.appendChild(backdrop);
   return backdrop;
 }
+function customConfirm(message) {
+  return new Promise((resolve) => {
+    const modal = openModal(`
+      <div class="modal-top"><h3>Sicherheitsabfrage</h3><button class="icon-btn" data-close>✕</button></div>
+      <p style="white-space:pre-wrap; margin-top:10px;">${escapeHtml(message)}</p>
+      <div class="btn-row">
+        <button class="btn warn" id="confirmYesBtn">Ja</button>
+        <button class="btn ghost" id="confirmNoBtn">Abbrechen</button>
+      </div>
+    `);
+    let resolved = false;
+    const finish = (result) => {
+      if (resolved) return;
+      resolved = true;
+      modal.remove();
+      resolve(result);
+    };
+    modal.querySelector("#confirmYesBtn").addEventListener("click", () => finish(true));
+    modal.querySelector("#confirmNoBtn").addEventListener("click", () => finish(false));
+    modal.querySelectorAll("[data-close]").forEach(b => b.addEventListener("click", () => finish(false)));
+  });
+}
 function escapeHtml(str) {
   return String(str).replace(/[&<>"']/g, m => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m]));
 }
@@ -652,15 +719,7 @@ function loadItems() {
     updateNachbestellBadge();
     // aktive Ansicht aktualisieren
     if (document.getElementById("view-ersatzteilsuche").classList.contains("active")) {
-      if (infoAllMode) {
-        const maxPage = Math.max(0, Math.ceil(allItems.length / INFO_PAGE_SIZE) - 1);
-        if (infoPage > maxPage) infoPage = maxPage;
-        renderInfoAllPage();
-      } else {
-        const q = document.getElementById("infoSearch").value;
-        const q2 = document.getElementById("infoSearch2").value;
-        renderInfoResults((q.trim() || q2.trim()) ? filterItems(q, q2) : []);
-      }
+      computeAndRenderInfo();
     }
     if (document.getElementById("view-nachbestellung").classList.contains("active")) {
       renderNachbestellung();
@@ -672,6 +731,7 @@ function updateNachbestellBadge() {
   const n = allItems.filter(i => Number(i.lagerbestand) < Number(i.mindestmenge)).length;
   document.getElementById("nachbestellCount").innerHTML =
     n > 0 ? `<span class="badge">${n} unter Mindestbestand</span>` : "alles im grünen Bereich";
+  document.getElementById("ersatzteilCount").textContent = `(${allItems.length} Artikel)`;
 }
 
 function matchesTerm(item, term) {
@@ -680,6 +740,33 @@ function matchesTerm(item, term) {
   return [item.artikelnummer, item.artikelnr, item.type, item.hersteller, item.lieferant, item.beschreibung, item.lagerort, item.regal, item.fach]
     .filter(Boolean).some(f => String(f).toLowerCase().includes(q));
 }
+const PAGE_SIZE = 30;
+function paginateList(list, pageState, prevId, nextId, indicatorId) {
+  const total = list.length;
+  const prevBtn = document.getElementById(prevId);
+  const nextBtn = document.getElementById(nextId);
+  const indicator = document.getElementById(indicatorId);
+  if (total > PAGE_SIZE) {
+    const totalPages = Math.ceil(total / PAGE_SIZE);
+    if (pageState.page > totalPages - 1) pageState.page = totalPages - 1;
+    if (pageState.page < 0) pageState.page = 0;
+    const start = pageState.page * PAGE_SIZE;
+    prevBtn.style.display = "inline-flex";
+    nextBtn.style.display = "inline-flex";
+    indicator.style.display = "inline-flex";
+    prevBtn.disabled = pageState.page === 0;
+    nextBtn.disabled = start + PAGE_SIZE >= total;
+    indicator.textContent = `${pageState.page + 1}/${totalPages}`;
+    return list.slice(start, start + PAGE_SIZE);
+  } else {
+    prevBtn.style.display = "none";
+    nextBtn.style.display = "none";
+    indicator.style.display = "none";
+    pageState.page = 0;
+    return list;
+  }
+}
+
 function filterItems(query, query2) {
   const q1 = (query || "").trim();
   const q2 = (query2 || "").trim();
@@ -705,27 +792,52 @@ async function generateArtikelnummer() {
 let currentBuchungTyp = "ein";
 const buchenSearchEl = document.getElementById("buchenSearch");
 const buchenSearch2El = document.getElementById("buchenSearch2");
-buchenSearchEl.addEventListener("input", () => renderBuchenResults(buchenSearchEl.value, buchenSearch2El.value));
-buchenSearch2El.addEventListener("input", () => renderBuchenResults(buchenSearchEl.value, buchenSearch2El.value));
+buchenSearchEl.addEventListener("input", () => { buchenPageState.page = 0; renderBuchenResults(buchenSearchEl.value, buchenSearch2El.value); });
+buchenSearch2El.addEventListener("input", () => { buchenPageState.page = 0; renderBuchenResults(buchenSearchEl.value, buchenSearch2El.value); });
 document.getElementById("buchenScanBtn").addEventListener("click", () => openScanner((text) => {
   buchenSearchEl.value = text;
+  buchenPageState.page = 0;
   renderBuchenResults(buchenSearchEl.value, buchenSearch2El.value);
 }));
+document.getElementById("buchenPrevBtn").addEventListener("click", () => {
+  buchenPageState.page--;
+  renderBuchenResults(buchenSearchEl.value, buchenSearch2El.value);
+});
+document.getElementById("buchenNextBtn").addEventListener("click", () => {
+  buchenPageState.page++;
+  renderBuchenResults(buchenSearchEl.value, buchenSearch2El.value);
+});
 document.getElementById("buchenSearchClearBtn").addEventListener("click", () => {
   buchenSearchEl.value = "";
+  buchenPageState.page = 0;
   renderBuchenResults(buchenSearchEl.value, buchenSearch2El.value);
 });
 document.getElementById("buchenSearch2ClearBtn").addEventListener("click", () => {
   buchenSearch2El.value = "";
+  buchenPageState.page = 0;
   renderBuchenResults(buchenSearchEl.value, buchenSearch2El.value);
 });
 
+const buchenPageState = { page: 0 };
 function renderBuchenResults(query, query2) {
-  const results = filterItems(query, query2);
   const container = document.getElementById("buchenResults");
-  if (!(query && query.trim()) && !(query2 && query2.trim())) { container.innerHTML = ""; return; }
-  if (results.length === 0) { container.innerHTML = `<div class="empty-state">Kein Ersatzteil gefunden.</div>`; return; }
-  container.innerHTML = results.slice(0, 30).map(item => `
+  if (!(query && query.trim()) && !(query2 && query2.trim())) {
+    container.innerHTML = "";
+    document.getElementById("buchenPrevBtn").style.display = "none";
+    document.getElementById("buchenNextBtn").style.display = "none";
+    document.getElementById("buchenPageIndicator").style.display = "none";
+    return;
+  }
+  const results = filterItems(query, query2);
+  if (results.length === 0) {
+    container.innerHTML = `<div class="empty-state">Kein Ersatzteil gefunden.</div>`;
+    document.getElementById("buchenPrevBtn").style.display = "none";
+    document.getElementById("buchenNextBtn").style.display = "none";
+    document.getElementById("buchenPageIndicator").style.display = "none";
+    return;
+  }
+  const page = paginateList(results, buchenPageState, "buchenPrevBtn", "buchenNextBtn", "buchenPageIndicator");
+  container.innerHTML = page.map(item => `
     <div class="card">
       <div class="row">
         <div style="flex:1;">
@@ -819,7 +931,7 @@ document.getElementById("verlaufSearch").addEventListener("input", (e) => {
 });
 
 async function deleteBuchungEintrag(id) {
-  if (!confirm("Diesen Buchungseintrag wirklich löschen?")) return;
+  if (!(await customConfirm("Diesen Buchungseintrag wirklich löschen?"))) return;
   try {
     await db.collection("buchungen").doc(id).delete();
     allBuchungen = allBuchungen.filter(b => b.id !== id);
@@ -832,7 +944,7 @@ async function deleteBuchungEintrag(id) {
 }
 
 document.getElementById("verlaufDeleteAllBtn").addEventListener("click", async () => {
-  if (!confirm("Wirklich die GESAMTE Buchungshistorie unwiderruflich löschen?")) return;
+  if (!(await customConfirm("Wirklich die GESAMTE Buchungshistorie unwiderruflich löschen?"))) return;
   try {
     let deletedTotal = 0;
     while (true) {
@@ -896,7 +1008,7 @@ function renderProjektListe() {
   container.querySelectorAll("[data-delete-projekt]").forEach(btn => {
     btn.addEventListener("click", async () => {
       const p = alleProjekte.find(x => x.id === btn.dataset.deleteProjekt);
-      if (!confirm(`Projekt "${p?.name || ""}" wirklich löschen? Das kann nicht rückgängig gemacht werden.`)) return;
+      if (!(await customConfirm(`Projekt "${p?.name || ""}" wirklich löschen? Das kann nicht rückgängig gemacht werden.`))) return;
       try {
         await db.collection("projektbestellungen").doc(btn.dataset.deleteProjekt).delete();
         alleProjekte = alleProjekte.filter(x => x.id !== btn.dataset.deleteProjekt);
@@ -1012,12 +1124,20 @@ document.getElementById("projektRenameBtn").addEventListener("click", () => {
 
 const projektSearchEl = document.getElementById("projektSearch");
 const projektSearch2El = document.getElementById("projektSearch2");
+const projektPageState = { page: 0 };
 function renderProjektSearchResults() {
   const q = projektSearchEl.value;
   const q2 = projektSearch2El.value;
   const container = document.getElementById("projektSearchResults");
-  if (!q.trim() && !q2.trim()) { container.innerHTML = ""; return; }
-  const results = filterItems(q, q2).slice(0, 15);
+  if (!q.trim() && !q2.trim()) {
+    container.innerHTML = "";
+    document.getElementById("projektPrevBtn").style.display = "none";
+    document.getElementById("projektNextBtn").style.display = "none";
+    document.getElementById("projektPageIndicator").style.display = "none";
+    return;
+  }
+  const full = filterItems(q, q2);
+  const results = paginateList(full, projektPageState, "projektPrevBtn", "projektNextBtn", "projektPageIndicator");
   container.innerHTML = results.map(item => `
     <div class="card">
       <div class="row">
@@ -1051,23 +1171,38 @@ function renderProjektSearchResults() {
       renderProjektPositionen();
       projektSearchEl.value = "";
       projektSearch2El.value = "";
+      projektPageState.page = 0;
       container.innerHTML = "";
+      document.getElementById("projektPrevBtn").style.display = "none";
+      document.getElementById("projektNextBtn").style.display = "none";
+      document.getElementById("projektPageIndicator").style.display = "none";
       toast("Zur Projektliste hinzugefügt.");
     });
   });
 }
-projektSearchEl.addEventListener("input", renderProjektSearchResults);
-projektSearch2El.addEventListener("input", renderProjektSearchResults);
+projektSearchEl.addEventListener("input", () => { projektPageState.page = 0; renderProjektSearchResults(); });
+projektSearch2El.addEventListener("input", () => { projektPageState.page = 0; renderProjektSearchResults(); });
 document.getElementById("projektScanBtn").addEventListener("click", () => openScanner((text) => {
   projektSearchEl.value = text;
+  projektPageState.page = 0;
   renderProjektSearchResults();
 }));
 document.getElementById("projektSearchClearBtn").addEventListener("click", () => {
   projektSearchEl.value = "";
+  projektPageState.page = 0;
   renderProjektSearchResults();
 });
 document.getElementById("projektSearch2ClearBtn").addEventListener("click", () => {
   projektSearch2El.value = "";
+  projektPageState.page = 0;
+  renderProjektSearchResults();
+});
+document.getElementById("projektPrevBtn").addEventListener("click", () => {
+  projektPageState.page--;
+  renderProjektSearchResults();
+});
+document.getElementById("projektNextBtn").addEventListener("click", () => {
+  projektPageState.page++;
   renderProjektSearchResults();
 });
 
@@ -1133,12 +1268,17 @@ let erwSelected = new Set();
 const erwSearchEl = document.getElementById("erwSearch");
 const erwSearch2El = document.getElementById("erwSearch2");
 
-let lastErwItems = [];
+let erwFullList = []; // komplettes Suchergebnis (alle Seiten)
+let erwAllMode = false;
+const erwPageState = { page: 0 };
 
 function runErwSearch() {
+  erwAllMode = false;
   const q = erwSearchEl.value;
   const q2 = erwSearch2El.value;
-  renderErwResults((q.trim() || q2.trim()) ? filterItems(q, q2) : []);
+  erwFullList = (q.trim() || q2.trim()) ? filterItems(q, q2) : [];
+  erwPageState.page = 0;
+  renderErwResults();
   updateErwAuswahlInfo();
 }
 erwSearchEl.addEventListener("input", runErwSearch);
@@ -1149,19 +1289,36 @@ document.getElementById("erwScanBtn").addEventListener("click", () => openScanne
   erwSearchEl.value = text;
   runErwSearch();
 }));
+document.getElementById("erwShowAllBtn").addEventListener("click", () => {
+  erwSearchEl.value = "";
+  erwSearch2El.value = "";
+  erwAllMode = true;
+  erwFullList = allItems;
+  erwPageState.page = 0;
+  renderErwResults();
+  updateErwAuswahlInfo();
+});
+document.getElementById("erwPrevBtn").addEventListener("click", () => {
+  erwPageState.page--;
+  renderErwResults();
+});
+document.getElementById("erwNextBtn").addEventListener("click", () => {
+  erwPageState.page++;
+  renderErwResults();
+});
 document.getElementById("erwAlleAnwaehlenBtn").addEventListener("click", () => {
-  lastErwItems.forEach(item => erwSelected.add(item.id));
-  renderErwResults(lastErwItems);
+  erwFullList.forEach(item => erwSelected.add(item.id));
+  renderErwResults();
   updateErwAuswahlInfo();
 });
 document.getElementById("erwAlleAbwaehlenBtn").addEventListener("click", () => {
-  lastErwItems.forEach(item => erwSelected.delete(item.id));
-  renderErwResults(lastErwItems);
+  erwFullList.forEach(item => erwSelected.delete(item.id));
+  renderErwResults();
   updateErwAuswahlInfo();
 });
 document.getElementById("erwAllesLeerenBtn").addEventListener("click", () => {
   erwSelected.clear();
-  renderErwResults(lastErwItems);
+  renderErwResults();
   updateErwAuswahlInfo();
 });
 
@@ -1170,14 +1327,17 @@ function updateErwAuswahlInfo() {
   document.getElementById("erwAuswahlInfo").textContent = `${n} Ersatzteil${n === 1 ? "" : "e"} ausgewählt`;
 }
 
-function renderErwResults(items) {
-  lastErwItems = items;
+function renderErwResults() {
   const container = document.getElementById("erwResults");
   const searchActive = erwSearchEl.value.trim().length > 0 || erwSearch2El.value.trim().length > 0;
-  if (items.length === 0) {
+  if (erwFullList.length === 0) {
     container.innerHTML = searchActive ? `<div class="empty-state">Kein Ersatzteil gefunden.</div>` : "";
+    document.getElementById("erwPrevBtn").style.display = "none";
+    document.getElementById("erwNextBtn").style.display = "none";
+    document.getElementById("erwPageIndicator").style.display = "none";
     return;
   }
+  const items = paginateList(erwFullList, erwPageState, "erwPrevBtn", "erwNextBtn", "erwPageIndicator");
   container.innerHTML = items.map(item => `
     <div class="card">
       <div class="row">
@@ -1266,7 +1426,7 @@ document.getElementById("erwBearbeitenBtn").addEventListener("click", () => {
 
 document.getElementById("erwLoeschenBtn").addEventListener("click", async () => {
   if (erwSelected.size === 0) { toast("Bitte mindestens ein Ersatzteil auswählen."); return; }
-  if (!confirm(`${erwSelected.size} ausgewählte Ersatzteile wirklich unwiderruflich löschen?`)) return;
+  if (!(await customConfirm(`${erwSelected.size} ausgewählte Ersatzteile wirklich unwiderruflich löschen?`))) return;
   try {
     const ids = [...erwSelected];
     const chunkSize = 400;
@@ -1285,6 +1445,226 @@ document.getElementById("erwLoeschenBtn").addEventListener("click", async () => 
     toast("Fehler beim Löschen.");
   }
 });
+
+/* -------------------- Inventur -------------------- */
+let invActive = false;
+let invItems = {}; // itemId -> { neuerBestand, abgehakt }
+let invPage = 0;
+const INV_PAGE_SIZE = 30;
+
+function showInvPrevNext(show) {
+  document.getElementById("invPrevBtn").style.display = show ? "inline-flex" : "none";
+  document.getElementById("invNextBtn").style.display = show ? "inline-flex" : "none";
+  document.getElementById("invPageIndicator").style.display = show ? "inline-flex" : "none";
+}
+
+function updateInvCounter() {
+  const ids = Object.keys(invItems);
+  const total = ids.length;
+  const done = ids.filter(id => invItems[id].abgehakt).length;
+  document.getElementById("invCounter").textContent = invActive ? `${done} von ${total} Artikel abgearbeitet` : "";
+}
+
+function getInvOpenItems() {
+  return allItems.filter(it => invItems[it.id] && !invItems[it.id].abgehakt);
+}
+
+function renderInvList() {
+  const container = document.getElementById("invResults");
+  if (!invActive) {
+    container.innerHTML = `<div class="empty-state">Noch keine Inventur gestartet. Auf "Inventur starten" klicken.</div>`;
+    showInvPrevNext(false);
+    updateInvCounter();
+    return;
+  }
+  const q = document.getElementById("invSearch").value;
+  const q2 = document.getElementById("invSearch2").value;
+  const openItems = getInvOpenItems();
+  if (q.trim() || q2.trim()) {
+    showInvPrevNext(false);
+    const filtered = openItems.filter(it => matchesTerm(it, q) && matchesTerm(it, q2));
+    renderInvCards(filtered);
+  } else {
+    showInvPrevNext(true);
+    const totalPages = Math.max(1, Math.ceil(openItems.length / INV_PAGE_SIZE));
+    if (invPage > totalPages - 1) invPage = totalPages - 1;
+    if (invPage < 0) invPage = 0;
+    const start = invPage * INV_PAGE_SIZE;
+    document.getElementById("invPrevBtn").disabled = invPage === 0;
+    document.getElementById("invNextBtn").disabled = start + INV_PAGE_SIZE >= openItems.length;
+    document.getElementById("invPageIndicator").textContent = `${invPage + 1}/${totalPages}`;
+    renderInvCards(openItems.slice(start, start + INV_PAGE_SIZE));
+  }
+  updateInvCounter();
+}
+
+function renderInvCards(items) {
+  const container = document.getElementById("invResults");
+  if (items.length === 0) {
+    container.innerHTML = `<div class="empty-state">Keine offenen Artikel gefunden.</div>`;
+    return;
+  }
+  container.innerHTML = items.map(item => {
+    const bestand = invItems[item.id]?.neuerBestand ?? (item.lagerbestand ?? 0);
+    return `
+      <div class="card">
+        <div class="row">
+          <div style="flex:1;">
+            <div class="title"><strong>${escapeHtml(item.beschreibung || "(keine Beschreibung)")}</strong></div>
+            <div class="meta">Type: ${escapeHtml(item.type || "")}</div>
+            <div class="meta mono">Interne Nr.: ${escapeHtml(item.artikelnummer || "")}</div>
+            ${item.lagerort ? `<div class="meta">Lagerort: ${escapeHtml(item.lagerort)}</div>` : ""}
+          </div>
+        </div>
+        <div class="row" style="margin-top:10px; gap:6px;">
+          <button class="icon-btn" data-invstep="-1" data-target="${item.id}">−</button>
+          <input type="number" class="qty-input" value="${bestand}" min="0" data-invqty="${item.id}">
+          <button class="icon-btn" data-invstep="1" data-target="${item.id}">+</button>
+          <button class="btn" data-invcheck="${item.id}" style="margin-left:auto;">✅</button>
+        </div>
+      </div>
+    `;
+  }).join("");
+  container.querySelectorAll("[data-invstep]").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const id = btn.dataset.target;
+      const step = Number(btn.dataset.invstep);
+      const cur = invItems[id]?.neuerBestand ?? 0;
+      const next = Math.max(0, cur + step);
+      invItems[id] = { ...invItems[id], neuerBestand: next };
+      const inp = container.querySelector(`[data-invqty="${id}"]`);
+      if (inp) inp.value = next;
+      await saveInvItem(id);
+    });
+  });
+  container.querySelectorAll("[data-invqty]").forEach(inp => {
+    inp.addEventListener("change", async () => {
+      const id = inp.dataset.invqty;
+      const val = Math.max(0, Number(inp.value) || 0);
+      invItems[id] = { ...invItems[id], neuerBestand: val };
+      await saveInvItem(id);
+    });
+  });
+  container.querySelectorAll("[data-invcheck]").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const id = btn.dataset.invcheck;
+      const neuerBestand = invItems[id]?.neuerBestand ?? 0;
+      try {
+        await db.collection("items").doc(id).update({ lagerbestand: neuerBestand });
+        await db.collection("inventur").doc(id).update({ neuerBestand, abgehakt: true });
+        invItems[id] = { neuerBestand, abgehakt: true };
+        renderInvList();
+        toast("Artikel abgehakt.");
+      } catch (e) {
+        console.error(e);
+        toast("Fehler beim Abhaken.");
+      }
+    });
+  });
+}
+
+async function saveInvItem(id) {
+  if (!db || !invItems[id]) return;
+  try {
+    await db.collection("inventur").doc(id).update({ neuerBestand: invItems[id].neuerBestand });
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+async function loadInventurData() {
+  const snap = await db.collection("inventur").get();
+  invItems = {};
+  snap.docs.forEach(d => { if (d.id !== "_meta") invItems[d.id] = d.data(); });
+}
+
+document.getElementById("invStartBtn").addEventListener("click", async () => {
+  if (!db) { toast("Firebase ist nicht konfiguriert."); return; }
+  let alreadyActive = false;
+  try {
+    const metaSnap = await db.collection("inventur").doc("_meta").get();
+    alreadyActive = metaSnap.exists && metaSnap.data().aktiv === true;
+  } catch (e) { console.error(e); }
+  const msg = alreadyActive
+    ? "Es läuft bereits eine Inventur. Mit bisherigem Zwischenstand fortsetzen?"
+    : `Inventur für ${allItems.length} Artikel starten?`;
+  if (!(await customConfirm(msg))) return;
+  try {
+    if (!alreadyActive) {
+      const chunkSize = 400;
+      for (let i = 0; i < allItems.length; i += chunkSize) {
+        const chunk = allItems.slice(i, i + chunkSize);
+        const batch = db.batch();
+        chunk.forEach(item => {
+          batch.set(db.collection("inventur").doc(item.id), {
+            neuerBestand: item.lagerbestand ?? 0,
+            abgehakt: false
+          });
+        });
+        await batch.commit();
+      }
+      await db.collection("inventur").doc("_meta").set({
+        aktiv: true,
+        gestartet: firebase.firestore.FieldValue.serverTimestamp()
+      });
+    }
+    await loadInventurData();
+    invActive = true;
+    invPage = 0;
+    document.getElementById("invSearch").value = "";
+    document.getElementById("invSearch2").value = "";
+    renderInvList();
+    toast(alreadyActive ? "Inventur fortgesetzt." : "Inventur gestartet.");
+  } catch (e) {
+    console.error(e);
+    toast("Fehler beim Starten der Inventur.");
+  }
+});
+
+document.getElementById("invAbbrechenBtn").addEventListener("click", async () => {
+  if (!db) { toast("Firebase ist nicht konfiguriert."); return; }
+  let metaSnap;
+  try { metaSnap = await db.collection("inventur").doc("_meta").get(); } catch (e) { console.error(e); }
+  if (!metaSnap || !metaSnap.exists || metaSnap.data().aktiv !== true) {
+    toast("Keine aktive Inventur vorhanden.");
+    return;
+  }
+  if (!(await customConfirm("Inventur wirklich abbrechen? Der gesamte Zwischenstand wird dabei gelöscht."))) return;
+  try {
+    while (true) {
+      const snap = await db.collection("inventur").limit(400).get();
+      if (snap.empty) break;
+      const batch = db.batch();
+      snap.docs.forEach(d => batch.delete(d.ref));
+      await batch.commit();
+      if (snap.size < 400) break;
+    }
+    invItems = {};
+    invActive = false;
+    invPage = 0;
+    document.getElementById("invSearch").value = "";
+    document.getElementById("invSearch2").value = "";
+    renderInvList();
+    toast("Inventur abgebrochen.");
+  } catch (e) {
+    console.error(e);
+    toast("Fehler beim Abbrechen.");
+  }
+});
+
+document.getElementById("invSearch").addEventListener("input", () => { invPage = 0; renderInvList(); });
+document.getElementById("invSearch2").addEventListener("input", () => { invPage = 0; renderInvList(); });
+document.getElementById("invSearchClearBtn").addEventListener("click", () => {
+  document.getElementById("invSearch").value = ""; invPage = 0; renderInvList();
+});
+document.getElementById("invSearch2ClearBtn").addEventListener("click", () => {
+  document.getElementById("invSearch2").value = ""; invPage = 0; renderInvList();
+});
+document.getElementById("invScanBtn").addEventListener("click", () => openScanner((text) => {
+  document.getElementById("invSearch").value = text; invPage = 0; renderInvList();
+}));
+document.getElementById("invPrevBtn").addEventListener("click", () => { if (invPage > 0) { invPage--; renderInvList(); } });
+document.getElementById("invNextBtn").addEventListener("click", () => { invPage++; renderInvList(); });
 
 async function doBuchung(itemId) {
   const qtyInput = document.getElementById("qty-" + itemId);
@@ -1373,36 +1753,32 @@ document.getElementById("nbPdfBtn").addEventListener("click", () => {
 /* -------------------- Ersatzteilsuche -------------------- */
 let lastInfoResultSet = null;
 let infoAllMode = false;
-let infoPage = 0;
-const INFO_PAGE_SIZE = 30;
+const infoPageState = { page: 0 };
 
-function showInfoPrevNext(show) {
-  document.getElementById("infoPrevBtn").style.display = show ? "inline-flex" : "none";
-  document.getElementById("infoNextBtn").style.display = show ? "inline-flex" : "none";
-  document.getElementById("infoPageIndicator").style.display = show ? "inline-flex" : "none";
+function getInfoFullList() {
+  if (infoAllMode) return allItems;
+  const q = document.getElementById("infoSearch").value;
+  const q2 = document.getElementById("infoSearch2").value;
+  return (q.trim() || q2.trim()) ? filterItems(q, q2) : [];
 }
 
-function renderInfoAllPage() {
-  const start = infoPage * INFO_PAGE_SIZE;
-  renderInfoResults(allItems.slice(start, start + INFO_PAGE_SIZE));
-  document.getElementById("infoPrevBtn").disabled = infoPage === 0;
-  document.getElementById("infoNextBtn").disabled = start + INFO_PAGE_SIZE >= allItems.length;
-  const totalPages = Math.max(1, Math.ceil(allItems.length / INFO_PAGE_SIZE));
-  document.getElementById("infoPageIndicator").textContent = `${infoPage + 1}/${totalPages}`;
+function computeAndRenderInfo() {
+  const full = getInfoFullList();
+  const slice = paginateList(full, infoPageState, "infoPrevBtn", "infoNextBtn", "infoPageIndicator");
+  renderInfoResults(slice);
 }
 
 document.getElementById("infoShowAllBtn").addEventListener("click", () => {
   document.getElementById("infoSearch").value = "";
   document.getElementById("infoSearch2").value = "";
   infoAllMode = true;
-  infoPage = 0;
-  showInfoPrevNext(true);
-  renderInfoAllPage();
+  infoPageState.page = 0;
+  computeAndRenderInfo();
 });
 
 document.getElementById("backupBtn").addEventListener("click", async () => {
   if (!db) { toast("Firebase ist nicht konfiguriert."); return; }
-  if (!confirm(`Backup der aktuellen Ersatzteilliste (${allItems.length} Artikel) erstellen? Ein vorhandenes Backup wird dabei überschrieben.`)) return;
+  if (!(await customConfirm(`Backup der aktuellen Ersatzteilliste (${allItems.length} Artikel) erstellen? Ein vorhandenes Backup wird dabei überschrieben.`))) return;
   try {
     // altes Backup zuerst leeren
     let deleted = 0;
@@ -1439,7 +1815,7 @@ document.getElementById("backupBtn").addEventListener("click", async () => {
 
 document.getElementById("restoreBtn").addEventListener("click", async () => {
   if (!db) { toast("Firebase ist nicht konfiguriert."); return; }
-  if (!confirm("Kompletten Reset aus dem letzten Backup durchführen? ALLE aktuellen Ersatzteile werden gelöscht und durch den Backup-Stand ersetzt. Das kann nicht rückgängig gemacht werden.")) return;
+  if (!(await customConfirm("Kompletten Reset aus dem letzten Backup durchführen? ALLE aktuellen Ersatzteile werden gelöscht und durch den Backup-Stand ersetzt. Das kann nicht rückgängig gemacht werden."))) return;
   try {
     const snap = await db.collection("backup").get();
     const backupDocs = snap.docs.filter(d => d.id !== "_meta");
@@ -1472,22 +1848,18 @@ document.getElementById("restoreBtn").addEventListener("click", async () => {
   }
 });
 document.getElementById("infoPrevBtn").addEventListener("click", () => {
-  if (infoPage > 0) { infoPage--; renderInfoAllPage(); }
+  infoPageState.page--;
+  computeAndRenderInfo();
 });
 document.getElementById("infoNextBtn").addEventListener("click", () => {
-  if ((infoPage + 1) * INFO_PAGE_SIZE < allItems.length) { infoPage++; renderInfoAllPage(); }
+  infoPageState.page++;
+  computeAndRenderInfo();
 });
 
 function runInfoSearch() {
-  const q = document.getElementById("infoSearch").value;
-  const q2 = document.getElementById("infoSearch2").value;
-  if (q.trim() || q2.trim()) {
-    infoAllMode = false;
-    showInfoPrevNext(false);
-    renderInfoResults(filterItems(q, q2));
-  } else {
-    renderInfoResults([]);
-  }
+  infoAllMode = false;
+  infoPageState.page = 0;
+  computeAndRenderInfo();
 }
 document.getElementById("infoSearch").addEventListener("input", runInfoSearch);
 document.getElementById("infoSearch2").addEventListener("input", runInfoSearch);
@@ -1570,11 +1942,11 @@ function renderInfoResults(items) {
     card.addEventListener("click", () => openItemDetail(card.dataset.open));
   });
   container.querySelectorAll("[data-edit]").forEach(btn => {
-    btn.addEventListener("click", (e) => {
+    btn.addEventListener("click", async (e) => {
       e.stopPropagation();
       const item = allItems.find(i => i.id === btn.dataset.edit);
       if (!item) return;
-      if (!confirm(`"${item.beschreibung || item.type || item.artikelnr || item.artikelnummer}" wirklich bearbeiten?`)) return;
+      if (!(await customConfirm(`"${item.beschreibung || item.type || item.artikelnr || item.artikelnummer}" wirklich bearbeiten?`))) return;
       openItemEditor(item);
     });
   });
@@ -1583,7 +1955,7 @@ function renderInfoResults(items) {
       e.stopPropagation();
       const item = allItems.find(i => i.id === btn.dataset.delete);
       if (!item) return;
-      if (!confirm(`"${item.type || item.artikelnr || item.artikelnummer}" wirklich entfernen? Das kann nicht rückgängig gemacht werden.`)) return;
+      if (!(await customConfirm(`"${item.type || item.artikelnr || item.artikelnummer}" wirklich entfernen? Das kann nicht rückgängig gemacht werden.`))) return;
       try {
         await db.collection("items").doc(item.id).delete();
         toast("Ersatzteil entfernt.");
@@ -1764,12 +2136,20 @@ let indivCart = {}; // itemId -> menge
 let indivCartNames = {}; // itemId -> Name, wer das Ersatzteil hinzugefügt hat
 const indivSearchEl = document.getElementById("indivSearch");
 const indivSearch2El = document.getElementById("indivSearch2");
+const indivPageState = { page: 0 };
 function renderIndivSearchResults() {
   const q = indivSearchEl.value;
   const q2 = indivSearch2El.value;
   const container = document.getElementById("indivSearchResults");
-  if (!q.trim() && !q2.trim()) { container.innerHTML = ""; return; }
-  const results = filterItems(q, q2).slice(0, 15);
+  if (!q.trim() && !q2.trim()) {
+    container.innerHTML = "";
+    document.getElementById("indivPrevBtn").style.display = "none";
+    document.getElementById("indivNextBtn").style.display = "none";
+    document.getElementById("indivPageIndicator").style.display = "none";
+    return;
+  }
+  const full = filterItems(q, q2);
+  const results = paginateList(full, indivPageState, "indivPrevBtn", "indivNextBtn", "indivPageIndicator");
   container.innerHTML = results.map(item => `
     <div class="card">
       <div class="row">
@@ -1805,23 +2185,38 @@ function renderIndivSearchResults() {
       renderIndivCart();
       indivSearchEl.value = "";
       indivSearch2El.value = "";
+      indivPageState.page = 0;
       container.innerHTML = "";
+      document.getElementById("indivPrevBtn").style.display = "none";
+      document.getElementById("indivNextBtn").style.display = "none";
+      document.getElementById("indivPageIndicator").style.display = "none";
       toast("Zur Bestellliste hinzugefügt.");
     });
   });
 }
-indivSearchEl.addEventListener("input", renderIndivSearchResults);
-indivSearch2El.addEventListener("input", renderIndivSearchResults);
+indivSearchEl.addEventListener("input", () => { indivPageState.page = 0; renderIndivSearchResults(); });
+indivSearch2El.addEventListener("input", () => { indivPageState.page = 0; renderIndivSearchResults(); });
 document.getElementById("indivScanBtn").addEventListener("click", () => openScanner((text) => {
   indivSearchEl.value = text;
+  indivPageState.page = 0;
   renderIndivSearchResults();
 }));
 document.getElementById("indivSearchClearBtn").addEventListener("click", () => {
   indivSearchEl.value = "";
+  indivPageState.page = 0;
   renderIndivSearchResults();
 });
 document.getElementById("indivSearch2ClearBtn").addEventListener("click", () => {
   indivSearch2El.value = "";
+  indivPageState.page = 0;
+  renderIndivSearchResults();
+});
+document.getElementById("indivPrevBtn").addEventListener("click", () => {
+  indivPageState.page--;
+  renderIndivSearchResults();
+});
+document.getElementById("indivNextBtn").addEventListener("click", () => {
+  indivPageState.page++;
   renderIndivSearchResults();
 });
 
@@ -1946,8 +2341,8 @@ document.getElementById("indivPdfBtn").addEventListener("click", async () => {
   }
 });
 
-document.getElementById("indivClearBtn").addEventListener("click", () => {
-  if (!confirm("Wirklich alle Positionen aus der Bestellliste entfernen?")) return;
+document.getElementById("indivClearBtn").addEventListener("click", async () => {
+  if (!(await customConfirm("Wirklich alle Positionen aus der Bestellliste entfernen?"))) return;
   indivCart = {};
   indivCartNames = {};
   renderIndivCart();
